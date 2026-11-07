@@ -1,0 +1,42 @@
+# Render Blueprint: web service + managed Postgres. Deploy with "New → Blueprint" on render.com.
+# Secrets (PayPal, Anthropic, Channel3, AG Studio) are prompted for at deploy time (sync: false).
+services:
+  - type: web
+    name: poolcart
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: poolcart-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: "22"
+      - key: DEMO_MODE
+        value: "true"
+      - key: PAYPAL_ENV
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_SANDBOX_PERSONAL_EMAIL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-opus-5-5
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: AG_STUDIO_LICENSE
+        sync: false
+
+databases:
+  - name: poolcart-db
+    plan: basic-256mb
+    databaseName: poolcart

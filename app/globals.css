@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* PoolCart design tokens. AG Grid / AG Studio themes read these too. */
+:root {
+  --pc-ink: #0f1f1a;
+  --pc-muted: #5b6b66;
+  --pc-canvas: #f4f7f5;
+  --pc-surface: #ffffff;
+  --pc-border: #dde6e2;
+  --pc-brand: #0f7b5f;
+  --pc-brand-dark: #0a5944;
+  --pc-brand-soft: #e3f3ec;
+  --pc-accent: #f2a541;
+  --pc-accent-soft: #fdf1df;
+  --pc-danger: #c23b3b;
+  --pc-danger-soft: #fbe9e9;
+  --pc-info: #2563eb;
+  --pc-info-soft: #e8effd;
+  --pc-font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pc-chart-1: #0f7b5f;
+  --pc-chart-2: #f2a541;
+  --pc-chart-3: #2563eb;
+  --pc-chart-4: #9b5de5;
+  --pc-chart-5: #e76f51;
+  --pc-chart-6: #2a9d8f;
+  --pc-chart-7: #8d99ae;
+  --pc-chart-8: #c9a227;
+  --pc-chart-9: #6a994e;
+  --pc-chart-10: #457b9d;
+}
+
+@theme inline {
+  --color-ink: var(--pc-ink);
+  --color-muted: var(--pc-muted);
+  --color-canvas: var(--pc-canvas);
+  --color-surface: var(--pc-surface);
+  --color-line: var(--pc-border);
+  --color-brand: var(--pc-brand);
+  --color-brand-dark: var(--pc-brand-dark);
+  --color-brand-soft: var(--pc-brand-soft);
+  --color-accent: var(--pc-accent);
+  --color-accent-soft: var(--pc-accent-soft);
+  --color-danger: var(--pc-danger);
+  --color-danger-soft: var(--pc-danger-soft);
+  --color-info: var(--pc-info);
+  --color-info-soft: var(--pc-info-soft);
+  --font-sans: var(--pc-font);
+}
+
+body {
+  background: var(--pc-canvas);
+  color: var(--pc-ink);
+  font-family: var(--pc-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: var(--pc-surface);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 10px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background 0.15s, opacity 0.15s;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--pc-brand);
+  color: white;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--pc-brand-dark);
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--pc-border);
+  color: var(--pc-ink);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--pc-brand-soft);
+}
+.btn-danger {
+  background: var(--pc-danger-soft);
+  color: var(--pc-danger);
+}
+.input {
+  width: 100%;
+  border: 1px solid var(--pc-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  background: white;
+  font-size: 0.9rem;
+}
+.input:focus {
+  outline: 2px solid var(--pc-brand);
+  outline-offset: -1px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pc-muted);
+}

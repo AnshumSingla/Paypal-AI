@@ -1,0 +1,1 @@
+ALTER TABLE "pool" ADD COLUMN "ai_recommendation" text;

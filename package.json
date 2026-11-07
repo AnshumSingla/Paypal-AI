@@ -1,0 +1,44 @@
+{
+  "name": "poolcart",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PoolCart: AI-organized group buying for apartment communities, paid with PayPal holds that capture only the price the group unlocks.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.5.0",
+    "@electric-sql/pglite": "^0.5.15",
+    "@paypal/react-paypal-js": "^10.6.1",
+    "ag-grid-community": "36.2.0",
+    "ag-grid-react": "36.2.0",
+    "ag-studio": "3.0.0",
+    "ag-studio-react": "3.0.0",
+    "drizzle-orm": "^0.45.4",
+    "next": "16.3.6",
+    "pg": "^8.23.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.1.0"
+  }
+}
