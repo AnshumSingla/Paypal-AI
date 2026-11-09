@@ -62,7 +62,7 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge.
 
 ## AI
 
-- **Society Secretary** (`lib/ai/secretary.ts`): one Claude agent using the Anthropic SDK tool runner. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It acts on events (a reported problem, holds coming in) and answers questions from every role.
+- **Society Secretary** (`lib/ai/secretary.ts`): one Claude agent using the Anthropic SDK tool runner. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It decides every reported problem as it comes in, negotiates when the captain asks it to, and answers questions from every role.
 - **Basket Assistant** (photo and text lists), **Pricing Copilot** (suggested price ladders for suppliers), **bid explanations**, **issue assessment** (photo checks), and an **AG Studio analyst** that builds charts from a question.
 - Model `claude-opus-5-5` with structured outputs and server-side refusal fallbacks.
 - **Works without a key:** every agent has a rule-based fallback, so the whole week runs offline. A public demo is capped at `AI_CALLS_PER_HOUR` (default 300) Claude calls.
