@@ -95,21 +95,21 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-surface/85 px-5 py-3 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-surface/85 px-5 py-3 backdrop-blur lg:px-8">
           <Link href="/" className="flex items-center gap-2 lg:hidden">
             <Logo size={28} />
-            <span className="font-semibold">Collective</span>
+            <span className="hidden font-semibold sm:inline">Collective</span>
           </Link>
           <nav className="flex gap-1 lg:hidden" aria-label="Pages">
             {pages.map((p) => (
-              <Link key={p.href} href={p.href} className="rounded-lg px-2.5 py-1 text-sm font-medium text-muted hover:bg-brand-soft hover:text-ink">
+              <Link key={p.href} href={p.href} className="whitespace-nowrap rounded-lg px-2.5 py-1 text-sm font-medium text-muted hover:bg-brand-soft hover:text-ink">
                 {p.label}
               </Link>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-sm text-muted md:inline">{today}</span>
-            <span className="chip bg-brand-soft text-brand-dark" title="No real money moves">
+            <span className="chip hidden bg-brand-soft text-brand-dark sm:inline-flex" title="No real money moves">
               {payMode() === "sandbox" ? "PayPal sandbox" : "Demo mode"}
             </span>
             <ThemeToggle />
