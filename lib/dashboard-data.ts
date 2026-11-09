@@ -1,5 +1,7 @@
 // Flat tables for the AG Studio dashboard (amounts in dollars, as AG Studio's currency format expects).
 import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import { trustScores } from "./engine/trust";
 import type { DB } from "./db";
 import * as s from "./db/schema";
 
@@ -62,7 +64,18 @@ export async function dashboardData(db: DB) {
     .filter(({ p }) => p.status !== "SUPERSEDED" && p.status !== "CREATED")
     .map(({ p, c }) => ({ id: p.id, week: c.weekLabel, method: p.method === "card" ? "Card (simulated neighbour)" : "PayPal wallet", mode: p.mode, status: p.status, held: d(p.authorizedCents), captured: d(p.capturedCents), released: p.status === "CAPTURED" || p.status === "VOIDED" ? d(p.authorizedCents - p.capturedCents) : 0, fee: d(p.paypalFeeCents) }));
 
-  return { lines, pools, payouts, payments, asOf: new Date().toISOString() };
+  const suppliers = await db.select().from(s.seller).where(eq(s.seller.status, "approved"));
+  const scores = await trustScores(db, "seller", suppliers.map((x) => x.id));
+  const counts = await db
+    .select({ id: s.trustEvent.subjectId, kind: s.trustEvent.kind, n: sql<number>`sum(${s.trustEvent.weight})::int` })
+    .from(s.trustEvent)
+    .where(eq(s.trustEvent.subjectType, "seller"))
+    .groupBy(s.trustEvent.subjectId, s.trustEvent.kind);
+  const count = (id: string, kind: string) => counts.find((c) => c.id === id && c.kind === kind)?.n ?? 0;
+  // Complaints carry weight 3 each in the trust score; show the number of complaints here.
+  const trust = suppliers.map((x) => ({ supplier: x.businessName, trust: scores.get(x.id) ?? 0, delivered: count(x.id, "delivered"), issues: Math.round(count(x.id, "issue_upheld") / 3) }));
+
+  return { lines, pools, payouts, payments, trust, asOf: new Date().toISOString() };
 }
 
 export type DashboardData = Awaited<ReturnType<typeof dashboardData>>;

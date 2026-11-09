@@ -19,7 +19,7 @@ export function QtyStepper({ cycleId, poolId, qty, max = 10, held }: { cycleId: 
         <button className="px-2.5 py-1 hover:bg-canvas disabled:opacity-40" disabled={pending || qty <= 0} onClick={() => set(qty - 1)} aria-label="Decrease">
           −
         </button>
-        <span className="min-w-8 px-1 text-center text-sm font-bold">{pending ? <Spinner /> : qty}</span>
+        <span className="min-w-8 px-1 num text-center text-sm font-medium">{pending ? <Spinner /> : qty}</span>
         <button className="px-2.5 py-1 hover:bg-canvas disabled:opacity-40" disabled={pending || qty >= max} onClick={() => set(qty + 1)} aria-label="Increase">
           +
         </button>

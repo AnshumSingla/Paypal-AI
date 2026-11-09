@@ -3,7 +3,8 @@
 // (build widgets, query data) run in the browser; this route only does the model call.
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgLlmRequest } from "ag-studio";
-import { aiEnabled, aiModel } from "@/lib/ai/claude";
+import { aiEnabled, aiModel, spendAiCall } from "@/lib/ai/claude";
+import { getSession } from "@/lib/session";
 
 type Block = Anthropic.Beta.Messages.BetaContentBlockParam;
 type Msg = { role: "user" | "assistant"; content: Block[] };
@@ -63,7 +64,10 @@ function toMessages(req: AgLlmRequest) {
 }
 
 export async function POST(request: Request) {
-  if (!aiEnabled()) return Response.json({ error: { code: "ai_disabled", message: "Set ANTHROPIC_API_KEY to use the AI analyst." } }, { status: 503 });
+  const { user } = await getSession();
+  if (user?.role !== "operator") return Response.json({ error: { code: "forbidden", message: "Open the operator view to use the AI analyst." } }, { status: 403 });
+  if (!aiEnabled()) return Response.json({ error: { code: "ai_disabled", message: "The AI analyst is off: no API key, or this hour's demo budget is used up." } }, { status: 503 });
+  spendAiCall();
   const req = (await request.json()) as AgLlmRequest;
   const { system, messages } = toMessages(req);
   const tools = (req.tools ?? [])
@@ -81,7 +85,7 @@ export async function POST(request: Request) {
     max_tokens: 16000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default" as const,
-    system: `${system}${steer}\nYou are the analyst inside PoolCart's operations dashboard (AG Studio). Data is PoolCart sandbox data; amounts are USD.`,
+    system: `${system}${steer}\nYou are the analyst inside Collective's operations dashboard (AG Studio). Collective runs bulk grocery buying for an Indian housing society; data is PayPal sandbox data; amounts are USD.`,
     messages: messages as Anthropic.Beta.Messages.BetaMessageParam[],
     ...(tools.length ? { tools, tool_choice: req.toolChoice === "none" ? { type: "none" as const } : { type: "auto" as const } } : {}),
     output_config: { effort: "medium" as const, ...(json ? { format: { type: "json_schema" as const, schema: json.schema as Record<string, unknown> } } : {}) },

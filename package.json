@@ -1,8 +1,8 @@
 {
-  "name": "poolcart",
+  "name": "collective",
   "version": "0.1.0",
   "private": true,
-  "description": "PoolCart: AI-organized group buying for apartment communities, paid with PayPal holds that capture only the price the group unlocks.",
+  "description": "Collective: an AI Society Secretary buys in bulk for a housing society; residents approve one PayPal hold and pay only the price the building unlocked.",
   "license": "MIT",
   "scripts": {
     "dev": "next dev",

@@ -1,4 +1,4 @@
-// AG Studio data sources + the default "PoolCart overview" report.
+// AG Studio data sources and the default Collective report.
 import type { AgDataSourcesDefinition, AgExpressionFieldDefinition, AgFieldDefinition, AgFormat, AgPageState, AgReportState, AgWidgetLayoutState } from "ag-studio";
 import { studioTheme } from "ag-studio";
 import type { DashboardData } from "@/lib/dashboard-data";
@@ -11,7 +11,7 @@ const ratio = (id: string, name: string, description: string, num: string, den: 
 export function buildStudioData(data: DashboardData): AgDataSourcesDefinition {
   return {
     description:
-      "PoolCart: apartment residents pool weekly grocery demand; sellers bid tiered bulk prices; each resident's PayPal authorization holds the top tier price and settlement captures only the unlocked price. Amounts are USD. 'Released' lines were in pools that missed their minimum and were never charged.",
+      "Collective: residents of an Indian housing society (Gulmohar Residency, Pune) pool weekly grocery demand; local suppliers bid tiered bulk prices; each resident's PayPal authorization holds the top tier price and settlement captures only the unlocked price. An AI Society Secretary ranks suppliers by price and a trust score from verified deliveries and upheld complaints. Amounts are USD. 'Released' lines were in pools that missed their minimum and were never charged.",
     sources: [
       {
         id: "lines",
@@ -23,8 +23,8 @@ export function buildStudioData(data: DashboardData): AgDataSourcesDefinition {
           ["week", "Week", "textFormat"],
           ["product", "Product", "textFormat"],
           ["category", "Category", "textFormat"],
-          ["seller", "Seller", "textFormat"],
-          ["unit", "Unit", "textFormat"],
+          ["seller", "Supplier", "textFormat"],
+          ["unit", "Flat", "textFormat"],
           ["outcome", "Outcome", "textFormat"],
           ["qty", "Packs", "integerFormat"],
           ["held", "Held (PayPal authorization)", "currencyFormat"],
@@ -37,7 +37,7 @@ export function buildStudioData(data: DashboardData): AgDataSourcesDefinition {
       {
         id: "pools",
         name: "Pools",
-        description: "One row per pooled product per week. succeeded=1 when the pool reached the winning seller's MOQ.",
+        description: "One row per pooled product per week. succeeded=1 when the pool reached the winning supplier's minimum order.",
         data: data.pools,
         fields: fields([
           ["id", "Pool ID", "textFormat", true],
@@ -55,14 +55,14 @@ export function buildStudioData(data: DashboardData): AgDataSourcesDefinition {
       },
       {
         id: "payouts",
-        name: "Seller payouts",
-        description: "PayPal Payouts to sellers after the issue window: net = gross - commission - refunds.",
+        name: "Supplier payouts",
+        description: "PayPal Payouts to suppliers after the issue window: net = gross - commission - refunds.",
         data: data.payouts,
         fields: fields([
           ["id", "Payout ID", "textFormat", true],
           ["week", "Payout Week", "textFormat"],
-          ["seller", "Payout Seller", "textFormat"],
-          ["plan", "Seller Plan", "textFormat"],
+          ["seller", "Payout Supplier", "textFormat"],
+          ["plan", "Supplier Plan", "textFormat"],
           ["gross", "Gross", "currencyFormat"],
           ["commission", "Commission", "currencyFormat"],
           ["refunds", "Refunds charged", "currencyFormat"],
@@ -85,6 +85,18 @@ export function buildStudioData(data: DashboardData): AgDataSourcesDefinition {
           ["captured", "Captured", "currencyFormat"],
           ["released", "Released to buyer", "currencyFormat"],
           ["fee", "PayPal fee", "currencyFormat"],
+        ]),
+      },
+      {
+        id: "trust",
+        name: "Supplier trust",
+        description: "One row per supplier: trust score 0-100 computed from verified events (lines delivered, complaints upheld), smoothed for small samples and weighted to recent weeks. Bid ranking weighs trust at 45%.",
+        data: data.trust,
+        fields: fields([
+          ["supplier", "Trust Supplier", "textFormat"],
+          ["trust", "Trust score", "integerFormat"],
+          ["delivered", "Lines delivered", "integerFormat"],
+          ["issues", "Complaints upheld", "integerFormat"],
         ]),
       },
     ],
@@ -130,7 +142,7 @@ const overview: AgPageState = {
     },
     "pool-grid": {
       type: "grid",
-      dataMapping: { cols: [{ id: "pools.week" }, { id: "pools.product" }, { id: "pools.status" }, sumOf("pools.demand"), sumOf("pools.keptQty"), sumOf("pools.finalUnit"), sumOf("pools.retailUnit")] },
+      dataMapping: { cols: [{ id: "pools.week" }, { id: "pools.product" }, { id: "pools.status" }, { id: "pools.demand" }, { id: "pools.keptQty" }, { id: "pools.finalUnit" }, { id: "pools.retailUnit" }] },
       format: title("Pools"),
     },
   },
@@ -150,14 +162,19 @@ const overview: AgPageState = {
 const sellers: AgPageState = {
   id: "sellers",
   widgets: {
-    "kpi-gross": kpi("Seller gross sales", sumOf("payouts.gross")),
+    "kpi-gross": kpi("Supplier gross sales", sumOf("payouts.gross")),
     "kpi-commission": kpi("Platform commission", sumOf("payouts.commission")),
     "kpi-net": kpi("Paid out via PayPal Payouts", sumOf("payouts.net")),
     "kpi-take": kpi("Take rate", { id: "takeRate" }),
     "by-seller": {
       type: "bar-chart-grouped",
       dataMapping: { categoryKey: [{ id: "payouts.seller" }], valueKey: [sumOf("payouts.net"), sumOf("payouts.commission"), sumOf("payouts.refunds")] },
-      format: { ...title("Payout breakdown by seller"), style: { theme: { common: { legend: { enabled: true } } } } },
+      format: { ...title("Payout breakdown by supplier"), style: { theme: { common: { legend: { enabled: true } } } } },
+    },
+    "trust-by-supplier": {
+      type: "bar-chart-grouped",
+      dataMapping: { categoryKey: [{ id: "trust.supplier" }], valueKey: [sumOf("trust.trust")] },
+      format: title("Trust score by supplier (verified deliveries and complaints)"),
     },
     "payout-grid": {
       type: "grid",
@@ -170,7 +187,8 @@ const sellers: AgPageState = {
     "kpi-commission": at(6, 0, 6, 6),
     "kpi-net": at(12, 0, 6, 6),
     "kpi-take": at(18, 0, 6, 6),
-    "by-seller": at(0, 6, 24, 18),
+    "by-seller": at(0, 6, 14, 18),
+    "trust-by-supplier": at(14, 6, 10, 18),
     "payout-grid": at(0, 24, 24, 16),
   },
 };

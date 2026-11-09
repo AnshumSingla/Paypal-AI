@@ -1,5 +1,5 @@
 "use client";
-// One PayPal approval per week: intent=AUTHORIZE for the ceiling amount (Product §5).
+// One PayPal approval per week: intent=AUTHORIZE for the ceiling amount (one hold, sized at the highest price).
 // Sandbox mode renders real PayPal Buttons; mock mode (no keys) simulates the approval step.
 import { useState, useTransition } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
@@ -52,9 +52,9 @@ export function Checkout({ cycleId, mode, clientId, ceilingCents }: { cycleId: s
           })
         }
       >
-        {pending && <Spinner />} Approve hold with PayPal <span className="chip bg-white/60">mock</span>
+        {pending && <Spinner />} Approve hold with PayPal <span className="chip bg-white/60">stand-in</span>
       </button>
-      <p className="text-[11px] text-muted">No PayPal keys configured: this simulates the PayPal approval popup. Add sandbox keys to use real PayPal Buttons.</p>
+      <p className="text-[11px] text-muted">Running without PayPal keys, so this stands in for the PayPal approval popup. With sandbox keys you get the real PayPal button.</p>
       {msg ? <Toast ok={msg.ok} text={msg.text} /> : null}
     </div>
   );

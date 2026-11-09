@@ -12,7 +12,7 @@ import * as s from "../lib/db/schema";
 import { seed } from "../lib/db/seed";
 import { advance, submitBid } from "../lib/engine/cycle";
 import { completeCheckout, setLineQty, startCheckout, withdrawBasket, getOrCreateBasket } from "../lib/engine/basket";
-import { simulateCompetingBids, simulateNeighbours } from "../lib/engine/demo";
+import { resetDemo, simulateCompetingBids, simulateNeighbours } from "../lib/engine/demo";
 import { reportIssue } from "../lib/engine/refunds";
 import { ledgerTotals } from "../lib/engine/ledger";
 import { parseBasket } from "../lib/ai/agents/basket";
@@ -103,4 +103,18 @@ describe("full weekly cycle (mock PayPal, rule-based AI)", () => {
     const totals = await ledgerTotals(db);
     expect(totals.balanced).toBe(true);
   });
+
+  it("after Reset, a second full week still pays sellers out", async () => {
+    await resetDemo(db);
+    await advance(db, CYCLE, "test"); // COLLECT → BID
+    await simulateCompetingBids(db, CYCLE);
+    await advance(db, CYCLE, "test"); // BID → COMMIT
+    await simulateNeighbours(db, CYCLE, 30);
+    await advance(db, CYCLE, "test"); // COMMIT → FULFIL
+    await advance(db, CYCLE, "test"); // FULFIL → RESOLVE
+    await advance(db, CYCLE, "test"); // RESOLVE → CLOSED
+    const payouts = await db.select().from(s.payout).where(eq(s.payout.cycleId, CYCLE));
+    expect(payouts.length).toBeGreaterThan(0);
+    expect(payouts.every((p) => p.status === "SUCCESS" || p.status === "CARRIED_FORWARD")).toBe(true);
+  }, 60_000); // Reset also replays three past weeks
 });

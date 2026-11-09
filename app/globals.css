@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
-/* PoolCart design tokens. AG Grid / AG Studio themes read these too. */
+/* Collective design tokens: calm and premium. Paper white, ink, hairlines, and one accent, a deep
+   indigo (neel). Amber is kept only for "waiting" states and red only for problems.
+   AG Grid / AG Studio themes read these too. */
 :root {
-  --pc-ink: #0f1f1a;
-  --pc-muted: #5b6b66;
-  --pc-canvas: #f4f7f5;
+  --pc-ink: #1a1c21;
+  --pc-muted: #6b6f78;
+  --pc-canvas: #fbfbfa;
   --pc-surface: #ffffff;
-  --pc-border: #dde6e2;
-  --pc-brand: #0f7b5f;
-  --pc-brand-dark: #0a5944;
-  --pc-brand-soft: #e3f3ec;
-  --pc-accent: #f2a541;
-  --pc-accent-soft: #fdf1df;
-  --pc-danger: #c23b3b;
-  --pc-danger-soft: #fbe9e9;
-  --pc-info: #2563eb;
-  --pc-info-soft: #e8effd;
-  --pc-font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --pc-chart-1: #0f7b5f;
-  --pc-chart-2: #f2a541;
-  --pc-chart-3: #2563eb;
-  --pc-chart-4: #9b5de5;
-  --pc-chart-5: #e76f51;
-  --pc-chart-6: #2a9d8f;
-  --pc-chart-7: #8d99ae;
-  --pc-chart-8: #c9a227;
-  --pc-chart-9: #6a994e;
-  --pc-chart-10: #457b9d;
+  --pc-border: #e8e8e5;
+  --pc-brand: #2f3a8f;
+  --pc-brand-dark: #222a6b;
+  --pc-brand-soft: #eef0f8;
+  --pc-accent: #b7862a;
+  --pc-accent-soft: #f8f2e4;
+  --pc-danger: #b4443a;
+  --pc-danger-soft: #fbedeb;
+  --pc-info: #2f3a8f;
+  --pc-info-soft: #eef0f8;
+  --pc-font: var(--font-mukta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Charts: indigo first, then quiet companions so the accent stays the one strong colour. */
+  --pc-chart-1: #2f3a8f;
+  --pc-chart-2: #9aa3d6;
+  --pc-chart-3: #b7862a;
+  --pc-chart-4: #6b6f78;
+  --pc-chart-5: #b4443a;
+  --pc-chart-6: #5b8c7a;
+  --pc-chart-7: #c9ccd3;
+  --pc-chart-8: #d8c38f;
+  --pc-chart-9: #444b8f;
+  --pc-chart-10: #8f939b;
 }
 
 @theme inline {
@@ -51,13 +54,61 @@ body {
   background: var(--pc-canvas);
   color: var(--pc-ink);
   font-family: var(--pc-font);
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Money always lines up. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pc-brand);
+  outline-offset: 2px;
 }
 
 .card {
   background: var(--pc-surface);
   border: 1px solid var(--pc-border);
-  border-radius: 14px;
+  border-radius: 12px;
+}
+
+/* Landing page: the price ladder lights up step by step, then the price paid appears. */
+@keyframes pc-step-on {
+  from {
+    background-color: transparent;
+    color: var(--pc-muted);
+  }
+}
+@keyframes pc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ladder-step {
+  animation: pc-step-on 500ms ease-out both;
+}
+.paid-reveal {
+  animation: pc-fade-up 600ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 .btn {
@@ -118,9 +169,7 @@ body {
   white-space: nowrap;
 }
 .label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--pc-muted);
 }

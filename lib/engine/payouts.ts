@@ -55,12 +55,13 @@ export async function processPayouts(db: DB, cycleId: string, actor: string): Pr
       continue;
     }
     await db.insert(s.payout).values({ id: payoutId, cycleId, sellerId, grossCents: e.gross, commissionCents: e.commission, refundsCents: e.refunds, carriedCents: carried, netCents: net, senderItemId, status: "PENDING" });
-    items.push({ receiver: sel.payoutEmail, cents: net, senderItemId, note: `PoolCart ${cycleId}: gross ${fmt(e.gross)} − commission ${fmt(e.commission)} − refunds ${fmt(e.refunds)}`, payoutId, sellerId });
+    items.push({ receiver: sel.payoutEmail, cents: net, senderItemId, note: `Collective ${cycleId}: gross ${fmt(e.gross)} − commission ${fmt(e.commission)} − refunds ${fmt(e.refunds)}`, payoutId, sellerId });
     lines.push(`${sel.businessName}: ${fmt(net)} (gross ${fmt(e.gross)}, commission ${fmt(e.commission)}, refunds ${fmt(e.refunds)})`);
   }
   if (items.length) {
     try {
-      const r = await gateway().payout({ senderBatchId: `poolcart-${cycleId}`, items });
+      // Cycle ids repeat after a demo reset, so the batch id also carries a fresh payout id.
+      const r = await gateway().payout({ senderBatchId: `poolcart-${cycleId}-${items[0].payoutId}`, items });
       for (const i of items) {
         await db.update(s.payout).set({ status: r.status === "SUCCESS" ? "SUCCESS" : "SENT", paypalBatchId: r.batchId }).where(eq(s.payout.id, i.payoutId));
         await db.update(s.seller).set({ balanceCents: 0 }).where(eq(s.seller.id, i.sellerId));
@@ -82,7 +83,7 @@ export async function retryPayout(db: DB, payoutId: string, actor: string) {
   const [po] = await db.select().from(s.payout).where(eq(s.payout.id, payoutId));
   if (!po || po.status !== "FAILED") return;
   const [sel] = await db.select().from(s.seller).where(eq(s.seller.id, po.sellerId));
-  const r = await gateway().payout({ senderBatchId: `poolcart-${po.cycleId}-retry-${po.sellerId}`, items: [{ receiver: sel.payoutEmail, cents: po.netCents, senderItemId: po.senderItemId, note: "PoolCart payout (retry)" }] });
+  const r = await gateway().payout({ senderBatchId: `poolcart-${po.cycleId}-retry-${po.id}`, items: [{ receiver: sel.payoutEmail, cents: po.netCents, senderItemId: po.senderItemId, note: "Collective payout (retry)" }] });
   await db.update(s.payout).set({ status: r.status === "SUCCESS" ? "SUCCESS" : "SENT", paypalBatchId: r.batchId }).where(eq(s.payout.id, payoutId));
   await db.update(s.seller).set({ balanceCents: 0 }).where(eq(s.seller.id, po.sellerId));
   await post(db, { cycleId: po.cycleId, memo: `Payout ${po.senderItemId}`, refType: "payout", refId: payoutId, legs: [{ account: "seller_payable", debit: po.netCents, sellerId: po.sellerId }, { account: "paypal_clearing", credit: po.netCents }] });

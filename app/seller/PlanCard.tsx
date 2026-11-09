@@ -1,5 +1,5 @@
 "use client";
-// Seller plan upgrade billed with PayPal Subscriptions. The server verifies the subscription with
+// Supplier plan upgrade billed with PayPal Subscriptions. The server verifies the subscription with
 // PayPal before granting the plan (never trusts the browser callback alone).
 import { useState, useTransition } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
@@ -8,8 +8,8 @@ import { Spinner, Toast } from "@/app/_components/ActionButton";
 
 const PLANS = [
   { id: "starter", name: "Starter", price: "Free", commission: "8%", perks: "Bid on open pools" },
-  { id: "pro", name: "Pro", price: "$19/mo", commission: "4%", perks: "AI Pricing Copilot, analytics, early demand access" },
-  { id: "partner", name: "Partner", price: "$49/mo", commission: "2.5%", perks: "Pro + tie-break priority, multi-society" },
+  { id: "pro", name: "Pro", price: "$19/mo", commission: "4%", perks: "AI price suggestions, analytics, early look at demand" },
+  { id: "partner", name: "Partner", price: "$49/mo", commission: "2.5%", perks: "Everything in Pro, priority in ties, several societies" },
 ] as const;
 
 export function PlanCard({ current, mode, clientId, planIds }: { current: string; mode: "sandbox" | "mock"; clientId?: string; planIds: Record<"pro" | "partner", string> | null }) {
@@ -19,18 +19,18 @@ export function PlanCard({ current, mode, clientId, planIds }: { current: string
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">Your plan</h2>
-        <span className="chip bg-info-soft text-info">PayPal Subscriptions</span>
+        <h2 className="text-lg font-semibold">Your plan</h2>
+        <span className="text-xs text-muted">Billed with PayPal Subscriptions</span>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {PLANS.map((p) => (
           <div key={p.id} className={`rounded-xl border p-3 text-sm ${current === p.id ? "border-brand bg-brand-soft" : "border-line"}`}>
             <div className="flex justify-between">
-              <b>{p.name}</b>
+              <span className="font-medium">{p.name}</span>
               <span>{p.price}</span>
             </div>
-            <div className="text-xl font-extrabold">{p.commission}</div>
-            <div className="text-xs text-muted">commission · {p.perks}</div>
+            <div className="text-xl font-semibold">{p.commission}</div>
+            <div className="text-xs text-muted">commission. {p.perks}.</div>
             {current === p.id ? (
               <span className="chip mt-2 bg-brand text-white">Current</span>
             ) : p.id !== "starter" ? (

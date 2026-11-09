@@ -1,4 +1,4 @@
-// PoolCart data model (docs/02-ARCHITECTURE.md §5). All money is integer cents, USD.
+// Collective data model (docs/02-ARCHITECTURE.md §5). All money is integer cents, USD.
 import { pgTable, text, integer, boolean, timestamp, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 const id = () => text("id").primaryKey();
@@ -259,6 +259,27 @@ export const webhookEvent = pgTable("webhook_event", {
   receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
 });
+
+// Verified facts behind supplier trust and resident reliability. Rows are never edited except to
+// void one on appeal; scores are always recomputed from them (lib/engine/trust.ts).
+export const trustEvent = pgTable(
+  "trust_event",
+  {
+    id: id(),
+    subjectType: text("subject_type", { enum: ["seller", "household"] }).notNull(),
+    subjectId: text("subject_id").notNull(),
+    cycleId: text("cycle_id"),
+    kind: text("kind", { enum: ["delivered", "issue_upheld", "commitment_kept", "payment_failed", "claim_rejected"] }).notNull(),
+    score: integer("score").notNull(), // 0 (bad) .. 100 (good)
+    weight: integer("weight").notNull().default(1), // e.g. number of lines delivered
+    refId: text("ref_id"),
+    note: text("note"),
+    voided: boolean("voided").notNull().default(false),
+    voidedBy: text("voided_by"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("trust_event_subject").on(t.subjectType, t.subjectId)],
+);
 
 export const activity = pgTable("activity", {
   id: id(),

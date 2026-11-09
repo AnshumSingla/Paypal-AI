@@ -15,6 +15,13 @@
       "when": 1793948191318,
       "tag": "0001_pool_recommendation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794248805618,
+      "tag": "0002_trust_event",
+      "breakpoints": true
     }
   ]
 }

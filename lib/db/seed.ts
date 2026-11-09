@@ -1,4 +1,4 @@
-// Demo data: the "Maple Heights" society, 40 households, 3 sellers, an operator and a grocery
+// Demo data: the "Gulmohar Residency" society (Pune; fictional), 40 households, 3 sellers, an operator and a grocery
 // catalog with retail reference prices. Everything here is clearly demo data (sandbox only).
 import { sql } from "drizzle-orm";
 import type { DB } from "./index";
@@ -89,30 +89,32 @@ export async function ensureSeeded(db: DB) {
   const existing = await db.select({ n: sql<number>`count(*)::int` }).from(s.society);
   if (existing[0].n > 0) return;
   await seed(db);
+  const { seedHistory } = await import("../engine/demo"); // dynamic: demo.ts imports this file
+  await seedHistory(db);
 }
 
 export async function seed(db: DB) {
   await db.insert(s.product).values(CATALOG.map((p) => ({ ...p, searchText: searchTextFor(p) })));
-  await db.insert(s.society).values({ id: SOCIETY_ID, name: "Maple Heights", dropPoint: "Lobby package room, Tower A" });
+  await db.insert(s.society).values({ id: SOCIETY_ID, name: "Gulmohar Residency, Pune", dropPoint: "Clubhouse store room, Tower A" });
 
   const households = UNIT_LABELS.map((unitLabel, i) => ({ id: `hh_${i + 1}`, societyId: SOCIETY_ID, unitLabel }));
   await db.insert(s.household).values(households);
 
   await db.insert(s.appUser).values([
-    { id: PERSONAS.resident, name: `Priya (${UNIT_LABELS[30]})`, email: "resident@poolcart.demo", role: "resident", householdId: "hh_31", societyId: SOCIETY_ID, isPersona: true },
-    { id: PERSONAS.captain, name: `Sam (Captain, ${UNIT_LABELS[11]})`, email: "captain@poolcart.demo", role: "captain", householdId: "hh_12", societyId: SOCIETY_ID, isPersona: true },
-    { id: PERSONAS.seller, name: "FreshFarm Wholesale", email: "orders@freshfarm.demo", role: "seller", isPersona: true },
-    { id: PERSONAS.operator, name: "PoolCart Ops", email: "ops@poolcart.demo", role: "operator", isPersona: true },
-    { id: "usr_seller_valley", name: "Valley Staples Co.", email: "bids@valleystaples.demo", role: "seller" },
-    { id: "usr_seller_corner", name: "Corner Grocer Plus", email: "hello@cornergrocer.demo", role: "seller" },
-    { id: "usr_seller_sunrise", name: "Sunrise Bulk Foods", email: "team@sunrisebulk.demo", role: "seller" },
+    { id: PERSONAS.resident, name: `Ananya Kulkarni (${UNIT_LABELS[30]})`, email: "resident@collective.demo", role: "resident", householdId: "hh_31", societyId: SOCIETY_ID, isPersona: true },
+    { id: PERSONAS.captain, name: `Rohan Mehta (Captain, ${UNIT_LABELS[11]})`, email: "captain@collective.demo", role: "captain", householdId: "hh_12", societyId: SOCIETY_ID, isPersona: true },
+    { id: PERSONAS.seller, name: "Sharma Wholesale Traders", email: "orders@sharmatraders.demo", role: "seller", isPersona: true },
+    { id: PERSONAS.operator, name: "Collective Ops", email: "ops@collective.demo", role: "operator", isPersona: true },
+    { id: "usr_seller_valley", name: "Deccan Staples Co.", email: "bids@deccanstaples.demo", role: "seller" },
+    { id: "usr_seller_corner", name: "Annapurna Kirana Mart", email: "hello@annapurnakirana.demo", role: "seller" },
+    { id: "usr_seller_sunrise", name: "Sahyadri Bulk Foods", email: "team@sahyadribulk.demo", role: "seller" },
   ]);
 
   await db.insert(s.seller).values([
-    { id: "sel_fresh", userId: PERSONAS.seller, businessName: "FreshFarm Wholesale", payoutEmail: process.env.PAYPAL_SANDBOX_PERSONAL_EMAIL || "freshfarm-payouts@poolcart.demo", status: "approved", licenseRef: "CA-FOOD-48213", rating: 47, fillRatePct: 98, plan: "starter" },
-    { id: "sel_valley", userId: "usr_seller_valley", businessName: "Valley Staples Co.", payoutEmail: "valley-payouts@poolcart.demo", status: "approved", licenseRef: "CA-FOOD-11907", rating: 44, fillRatePct: 93, plan: "starter" },
-    { id: "sel_corner", userId: "usr_seller_corner", businessName: "Corner Grocer Plus", payoutEmail: "corner-payouts@poolcart.demo", status: "approved", licenseRef: "CA-FOOD-20554", rating: 41, fillRatePct: 88, plan: "starter" },
-    { id: "sel_sunrise", userId: "usr_seller_sunrise", businessName: "Sunrise Bulk Foods", payoutEmail: "sunrise-payouts@poolcart.demo", status: "pending", licenseRef: "CA-FOOD-31876", rating: 45, fillRatePct: 90, plan: "starter" },
+    { id: "sel_fresh", userId: PERSONAS.seller, businessName: "Sharma Wholesale Traders", payoutEmail: process.env.PAYPAL_SANDBOX_PERSONAL_EMAIL || "sharma-payouts@collective.demo", status: "approved", licenseRef: "FSSAI-11524998201", rating: 47, fillRatePct: 98, plan: "starter" },
+    { id: "sel_valley", userId: "usr_seller_valley", businessName: "Deccan Staples Co.", payoutEmail: process.env.PAYPAL_SANDBOX_PERSONAL_EMAIL || "deccan-payouts@collective.demo", status: "approved", licenseRef: "FSSAI-11524998437", rating: 44, fillRatePct: 93, plan: "starter" },
+    { id: "sel_corner", userId: "usr_seller_corner", businessName: "Annapurna Kirana Mart", payoutEmail: process.env.PAYPAL_SANDBOX_PERSONAL_EMAIL || "annapurna-payouts@collective.demo", status: "approved", licenseRef: "FSSAI-21524998660", rating: 41, fillRatePct: 88, plan: "starter" },
+    { id: "sel_sunrise", userId: "usr_seller_sunrise", businessName: "Sahyadri Bulk Foods", payoutEmail: process.env.PAYPAL_SANDBOX_PERSONAL_EMAIL || "sahyadri-payouts@collective.demo", status: "pending", licenseRef: "FSSAI-11524998912", rating: 45, fillRatePct: 90, plan: "starter" },
   ]);
 
   const cycleId = "cyc_w46";
@@ -132,5 +134,5 @@ export async function seed(db: DB) {
     }
   }
   await db.insert(s.need).values(needs);
-  await db.insert(s.activity).values({ id: newId("act"), cycleId, actor: "system", kind: "system", message: `Week 46 opened for Maple Heights; ${new Set(needs.map((n) => n.householdId)).size} households have added needs.` });
+  await db.insert(s.activity).values({ id: newId("act"), cycleId, actor: "system", kind: "system", message: `Week 46 opened for Gulmohar Residency; ${new Set(needs.map((n) => n.householdId)).size} households have added needs.` });
 }

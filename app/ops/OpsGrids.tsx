@@ -20,10 +20,10 @@ const ledgerCols: ColDef<LedgerRow>[] = [
 
 const decisionCols: ColDef<DecisionRow>[] = [
   { field: "when", valueFormatter: time, maxWidth: 190, sort: "desc" },
-  { field: "agent", maxWidth: 160 },
-  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "#8a5a12", fontWeight: 400 } : { color: "#0a5944", fontWeight: 600 }) },
+  { field: "agent", maxWidth: 170, valueFormatter: (p) => String(p.value).replaceAll("_", " ") },
+  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "#7d5a14", fontWeight: 400 } : { color: "#2f3a8f", fontWeight: 500 }) },
   { field: "input", maxWidth: 170 },
-  { field: "output", minWidth: 320, tooltipField: "output" },
+  { field: "output", headerName: "What it decided", minWidth: 360, tooltipField: "output" },
 ];
 
 export function OpsGrids({ ledger, decisions }: { ledger: LedgerRow[]; decisions: DecisionRow[] }) {
@@ -32,15 +32,15 @@ export function OpsGrids({ ledger, decisions }: { ledger: LedgerRow[]; decisions
     <section className="card p-5">
       <div className="mb-3 flex gap-2">
         <button className={`btn ${tab === "ledger" ? "btn-primary" : "btn-ghost"}`} onClick={() => setTab("ledger")}>
-          Double-entry ledger ({ledger.length})
+          Ledger ({ledger.length})
         </button>
         <button className={`btn ${tab === "ai" ? "btn-primary" : "btn-ghost"}`} onClick={() => setTab("ai")}>
-          AI decision log ({decisions.length})
+          AI decisions ({decisions.length})
         </button>
       </div>
       {tab === "ledger" ? <Grid rows={ledger} cols={ledgerCols} height={380} getRowId={(r) => r.id} /> : <Grid rows={decisions} cols={decisionCols} height={380} getRowId={(r) => r.id} />}
       <p className="mt-2 text-xs text-muted">
-        {tab === "ledger" ? "Every PayPal capture, fee, refund, commission and payout writes balanced rows (Architecture §7)." : "Every agent call is logged with its model (or 'rules' when the fallback ran) for audit (Policies §14.2)."}
+        {tab === "ledger" ? "Every PayPal charge, fee, refund, commission and payout writes balanced debit and credit rows." : "Every AI decision is kept with the model that made it, or 'rules' when the fallback ran."}
       </p>
     </section>
   );

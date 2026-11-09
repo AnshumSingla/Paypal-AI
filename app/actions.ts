@@ -8,9 +8,9 @@ import { getSession, homeFor, SESSION_COOKIE } from "@/lib/session";
 import * as s from "@/lib/db/schema";
 import { newId } from "@/lib/util/ids";
 import { PolicyError } from "@/lib/engine/pricing";
-import { PayPalError } from "@/lib/paypal/gateway";
+import { gateway, PayPalError } from "@/lib/paypal/gateway";
 import { advance, rankPool, selectWinner, submitBid } from "@/lib/engine/cycle";
-import { completeCheckout, getOrCreateBasket, markReceived, setLineQty, startCheckout, withdrawBasket } from "@/lib/engine/basket";
+import { cardCheckout, completeCheckout, getOrCreateBasket, markReceived, setLineQty, startCheckout, withdrawBasket } from "@/lib/engine/basket";
 import { decideIssue, reportIssue } from "@/lib/engine/refunds";
 import { retryPayout } from "@/lib/engine/payouts";
 import { demoMode, resetDemo, simulateCompetingBids, simulateNeighbours, startNextCycle } from "@/lib/engine/demo";
@@ -18,6 +18,10 @@ import { parseBasket, type BasketLineDraft } from "@/lib/ai/agents/basket";
 import { suggestTiers } from "@/lib/ai/agents/sellerSide";
 import { log } from "@/lib/engine/ledger";
 import { activateSubscription } from "@/lib/paypal/subscriptions";
+import { runSecretary } from "@/lib/ai/secretary";
+import { PERSONAS } from "@/lib/db/seed";
+import { performTourStep, tourStep } from "@/lib/engine/tour";
+import { refreshRetailPrices } from "@/lib/engine/retail";
 
 export type ActionResult<T = undefined> = { ok: true; message?: string; data?: T } | { ok: false; error: string };
 
@@ -73,6 +77,34 @@ export async function simulateBidsAction(cycleId: string) {
   });
 }
 
+// ---------------------------------------------------------------- guided demo
+async function openPersona(as: keyof typeof PERSONAS) {
+  (await cookies()).set(SESSION_COOKIE, PERSONAS[as], { httpOnly: true, sameSite: "lax", path: "/" });
+  return homeFor(as);
+}
+
+/** Run the guided demo's current step, then switch to the person whose view shows the next one. */
+export async function tourNextAction(cycleId: string) {
+  return guard<{ href: string }>(async () => {
+    if (!demoMode()) throw new PolicyError("The guided demo is off.");
+    const { db, user } = await getSession();
+    const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    if (!c) throw new PolicyError("Cycle not found.");
+    const message = await performTourStep(db, c, user?.name ?? "Guided demo");
+    const [after] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    const next = await tourStep(db, after);
+    return { message, data: { href: await openPersona(next.as) } };
+  });
+}
+
+/** Open the view where the guided demo's current step happens. */
+export async function tourJumpAction(as: keyof typeof PERSONAS) {
+  return guard<{ href: string }>(async () => {
+    if (!demoMode()) throw new PolicyError("The guided demo is off.");
+    return { data: { href: await openPersona(as) } };
+  });
+}
+
 export async function resetDemoAction() {
   return guard(async () => {
     if (!demoMode()) throw new PolicyError("Demo tools are off.");
@@ -114,7 +146,7 @@ export async function saveNeedsAction(cycleId: string, lines: BasketLineDraft[],
     }
     const blocked = lines.filter((l) => l.restricted).length;
     await log(db, cycleId, user.name, "resident", `Added ${usable.length} item(s) to this week's needs${blocked ? `; ${blocked} restricted item(s) were not added` : ""}.`);
-    return { message: `${usable.length} item(s) added${blocked ? `; ${blocked} restricted item(s) skipped (Policies §15)` : ""}.` };
+    return { message: `${usable.length} item(s) added${blocked ? `; ${blocked} item(s) that can't be sold here were skipped` : ""}.` };
   });
 }
 
@@ -149,6 +181,50 @@ export async function finishCheckoutAction(cycleId: string, orderId: string) {
   });
 }
 
+/** Judges without a PayPal sandbox login: the same real sandbox hold, placed with PayPal's published test card. */
+export async function testCardHoldAction(cycleId: string) {
+  return guard(async () => {
+    const { db, household, user } = await require(["resident", "captain"]);
+    const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    if (c?.phase !== "COMMIT") throw new PolicyError("Holds can only be placed during Confirm & pay.");
+    const bk = await getOrCreateBasket(db, cycleId, household!.id);
+    if (bk.status === "AUTHORIZED") throw new PolicyError("Your hold is already in place.");
+    await db.update(s.payment).set({ status: "SUPERSEDED" }).where(and(eq(s.payment.basketId, bk.id), eq(s.payment.status, "CREATED")));
+    await cardCheckout(db, bk.id, user.name);
+    return { message: "Hold placed with the sandbox test card. You're charged the final price at cutoff." };
+  });
+}
+
+/** Ask PayPal directly what happened to this resident's hold: the proof behind the receipt. */
+export async function verifyPaymentAction(paymentId: string) {
+  return guard(async () => {
+    const { db, household } = await require(["resident", "captain"]);
+    const [r] = await db.select({ p: s.payment, bk: s.basket }).from(s.payment).innerJoin(s.basket, eq(s.payment.basketId, s.basket.id)).where(eq(s.payment.id, paymentId));
+    if (!r || r.bk.householdId !== household?.id || !r.p.paypalAuthorizationId) throw new PolicyError("Payment not found.");
+    const a = await gateway().getAuthorization(r.p.paypalAuthorizationId);
+    const words: Record<string, string> = { CAPTURED: "charged and closed", PARTIALLY_CAPTURED: "partly charged", VOIDED: "released, nothing charged", CREATED: "still held", PENDING: "pending", DENIED: "declined", EXPIRED: "expired" };
+    return { message: `PayPal ${gateway().mode === "sandbox" ? "sandbox" : "stand-in"} confirms: hold of $${(a.amountCents / 100).toFixed(2)} is ${words[a.status] ?? a.status.toLowerCase()}.` };
+  });
+}
+
+/** Refresh payout statuses from PayPal Payouts (a batch starts as "sent" and settles later). */
+export async function refreshPayoutsAction() {
+  return guard(async () => {
+    const { db, seller } = await require(["seller", "operator"]);
+    const rows = await db.select().from(s.payout).where(seller ? and(eq(s.payout.sellerId, seller.id), eq(s.payout.status, "SENT")) : eq(s.payout.status, "SENT"));
+    let updated = 0;
+    for (const po of rows) {
+      if (!po.paypalBatchId) continue;
+      const b = await gateway().getPayoutBatch(po.paypalBatchId);
+      if (b.status === "SUCCESS") {
+        await db.update(s.payout).set({ status: "SUCCESS" }).where(eq(s.payout.id, po.id));
+        updated++;
+      }
+    }
+    return { message: rows.length ? `Checked ${rows.length} payout${rows.length === 1 ? "" : "s"} with PayPal; ${updated} now paid.` : "All payouts are already settled." };
+  });
+}
+
 export async function withdrawAction(cycleId: string) {
   return guard(async () => {
     const { db, household, user } = await require(["resident", "captain"]);
@@ -169,7 +245,7 @@ export async function reportIssueAction(input: { basketLineId: string; type: "mi
   return guard(async () => {
     const { db, household, user } = await require(["resident", "captain"]);
     const r = await reportIssue(db, { ...input, householdId: household!.id, actor: user.name });
-    return { message: r.decision === "auto_approved" ? `Refund of $${(r.refundCents / 100).toFixed(2)} approved automatically and sent to your PayPal.` : `Reported. The captain will review a proposed refund of $${(r.refundCents / 100).toFixed(2)}.` };
+    return { message: r.decision === "auto_approved" ? `The Society Secretary refunded $${(r.refundCents / 100).toFixed(2)} to your PayPal.` : `Reported. The Secretary passed it to the captain: ${r.secretary}` };
   });
 }
 
@@ -194,6 +270,28 @@ export async function decideIssueAction(issueId: string, approve: boolean, amoun
     const { db, user } = await require(["captain", "operator"]);
     await decideIssue(db, issueId, approve, user.name, amountCents);
     return { message: approve ? "Refund sent via PayPal." : "Issue rejected." };
+  });
+}
+
+// ---------------------------------------------------------------- Society Secretary
+/** Ask the Secretary a question. Its tools are scoped to the asker's role. */
+export async function askSecretaryAction(cycleId: string, question: string) {
+  return guard<{ reply: string; source: "ai" | "rules" }>(async () => {
+    const { db, user, household, seller } = await require(["resident", "captain", "seller", "operator"]);
+    if (!question.trim()) throw new PolicyError("Type a question first.");
+    if (question.length > 1000) throw new PolicyError("Please keep questions under 1,000 characters.");
+    const role = user.role === "operator" ? "captain" : user.role;
+    const r = await runSecretary(db, { cycleId, role, householdId: household?.id, sellerId: seller?.id, task: { kind: "ask", question } });
+    return { data: { reply: r.reply, source: r.source } };
+  });
+}
+
+/** Captain: let the Secretary put the authorized money on the table and ask suppliers for deeper tiers. */
+export async function fundedAsksAction(cycleId: string) {
+  return guard(async () => {
+    const { db } = demoMode() ? await getSession() : await require(["captain", "operator"]);
+    const r = await runSecretary(db, { cycleId, role: "system", task: { kind: "funded_asks" } });
+    return { message: r.reply };
   });
 }
 
@@ -241,6 +339,13 @@ export async function setSellerStatusAction(sellerId: string, status: "approved"
   return guard(async () => {
     const { db, user } = await require(["operator"]);
     await db.update(s.seller).set({ status }).where(eq(s.seller.id, sellerId));
-    await log(db, null, user.name, "seller", `Seller ${sellerId} ${status}.`);
+    await log(db, null, user.name, "seller", `Supplier ${sellerId} ${status}.`);
+  });
+}
+
+export async function refreshRetailAction() {
+  return guard(async () => {
+    const { db, user } = await require(["operator"]);
+    return { message: await refreshRetailPrices(db, user.name) };
   });
 }

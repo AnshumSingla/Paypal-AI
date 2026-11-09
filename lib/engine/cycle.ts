@@ -12,6 +12,7 @@ import { COMMISSION_BPS, ceilingUnit, PolicyError, validateTiers } from "./prici
 import { log } from "./ledger";
 import { settleCycle } from "./settlement";
 import { processPayouts } from "./payouts";
+import { recordTrust, trustScores } from "./trust";
 
 export type Phase = (typeof s.cycle.$inferSelect)["phase"];
 export const PHASES: Phase[] = ["COLLECT", "BID", "COMMIT", "FULFIL", "RESOLVE", "CLOSED"];
@@ -53,12 +54,27 @@ export async function advance(db: DB, cycleId: string, actor: string): Promise<s
       return msg;
     }
     case "COMMIT": {
+      // Moving the phase first acts as a lock against a double click. If settlement throws,
+      // the phase goes back so cutoff can be retried; settlement skips work already done.
       await setPhase(db, c.id, "COMMIT", "FULFIL", { settledAt: new Date() });
-      const msg = await settleCycle(db, c.id, actor);
-      return msg;
+      try {
+        return await settleCycle(db, c.id, actor);
+      } catch (e) {
+        await setPhase(db, c.id, "FULFIL", "COMMIT", { settledAt: null });
+        throw e;
+      }
     }
     case "FULFIL": {
       await setPhase(db, c.id, "FULFIL", "RESOLVE", { handoverAt: new Date() });
+      // Each delivered pool is a verified fact for the supplier's trust score, weighted by lines served.
+      const delivered = await db
+        .select({ poolId: s.pool.id, sellerId: s.bid.sellerId, lines: sql<number>`count(${s.basketLine.id})::int` })
+        .from(s.pool)
+        .innerJoin(s.bid, eq(s.pool.winningBidId, s.bid.id))
+        .innerJoin(s.basketLine, and(eq(s.basketLine.poolId, s.pool.id), eq(s.basketLine.status, "won")))
+        .where(and(eq(s.pool.cycleId, c.id), eq(s.pool.status, "SUCCEEDED")))
+        .groupBy(s.pool.id, s.bid.sellerId);
+      for (const d of delivered) await recordTrust(db, { subjectType: "seller", subjectId: d.sellerId, cycleId: c.id, kind: "delivered", weight: d.lines, refId: d.poolId });
       await db.update(s.pool).set({ status: "DELIVERED" }).where(and(eq(s.pool.cycleId, c.id), eq(s.pool.status, "SUCCEEDED")));
       await log(db, c.id, actor, "phase", "Captain confirmed the drop was handed over. The 24h issue window is open.");
       return "Handover confirmed; issue window open.";
@@ -100,7 +116,7 @@ export async function buildPools(db: DB, cycleId: string): Promise<string> {
     `cycle:${cycleId}`,
     () =>
       structured({
-        system: `You are PoolCart's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
+        system: `You are Collective's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
         content: rows.map((r) => `${r.productId}: ${r.title}${r.brand ? ` (${r.brand})` : ""} ${r.packSize}: ${r.qty} packs from ${r.households} households, ${r.flexible} packs brand-flexible`).join("\n"),
         schema: Brief,
         effort: "low",
@@ -119,7 +135,8 @@ export async function buildPools(db: DB, cycleId: string): Promise<string> {
 }
 
 // ------------------------------------------------------------------ Bids
-export async function submitBid(db: DB, a: { poolId: string; sellerId: string; moq: number; maxCapacity: number; tiers: s.Tier[]; deliveryWindow: string; note?: string }) {
+/** `rank: false` skips the per-bid ranking call; the caller ranks each pool once afterwards. */
+export async function submitBid(db: DB, a: { poolId: string; sellerId: string; moq: number; maxCapacity: number; tiers: s.Tier[]; deliveryWindow: string; note?: string }, rank = true) {
   validateTiers(a.moq, a.maxCapacity, a.tiers);
   const [p] = await db.select().from(s.pool).where(eq(s.pool.id, a.poolId));
   if (!p || p.status !== "OPEN_FOR_BIDS") throw new PolicyError("This pool isn't open for bids.");
@@ -133,7 +150,7 @@ export async function submitBid(db: DB, a: { poolId: string; sellerId: string; m
   const id = newId("bid");
   await db.insert(s.bid).values({ id, poolId: a.poolId, sellerId: a.sellerId, moq: a.moq, maxCapacity: a.maxCapacity, tiers: a.tiers, deliveryWindow: a.deliveryWindow, note: a.note || null });
   await log(db, p.cycleId, sel.businessName, "seller", `${sel.businessName} bid on ${prod.title}: ${a.tiers.map((t) => `${t.minQty}+ @ ${fmt(t.unitCents)}`).join(", ")}.`);
-  await rankPool(db, a.poolId);
+  if (rank) await rankPool(db, a.poolId);
   return id;
 }
 
@@ -143,12 +160,13 @@ export async function rankPool(db: DB, poolId: string) {
   const [prod] = await db.select().from(s.product).where(eq(s.product.id, p.productId));
   const bids = await db.select({ b: s.bid, sel: s.seller }).from(s.bid).innerJoin(s.seller, eq(s.bid.sellerId, s.seller.id)).where(and(eq(s.bid.poolId, poolId), eq(s.bid.status, "submitted")));
   if (!bids.length) return null;
+  const trust = await trustScores(db, "seller", bids.map(({ sel }) => sel.id));
   const analysis = await analyzeBids(db, {
     poolId,
     productTitle: `${prod.title} (${prod.packSize})`,
     demand: p.demandEstimate,
     retailRefCents: prod.retailRefCents,
-    bids: bids.map(({ b, sel }) => ({ id: b.id, sellerName: sel.businessName, rating: sel.rating, fillRatePct: sel.fillRatePct, moq: b.moq, maxCapacity: b.maxCapacity, tiers: b.tiers, deliveryWindow: b.deliveryWindow, note: b.note })),
+    bids: bids.map(({ b, sel }) => ({ id: b.id, sellerName: sel.businessName, trust: trust.get(sel.id)!, moq: b.moq, maxCapacity: b.maxCapacity, tiers: b.tiers, deliveryWindow: b.deliveryWindow, note: b.note })),
   });
   for (const r of analysis.ranked) await db.update(s.bid).set({ aiScore: r.score, aiRationale: r.rationale, aiFlags: r.flags }).where(eq(s.bid.id, r.bidId));
   await db.update(s.pool).set({ aiRecommendation: analysis.recommendation }).where(eq(s.pool.id, poolId));
