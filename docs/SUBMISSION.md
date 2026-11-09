@@ -10,7 +10,7 @@ Everything for the Devpost form and the video, in one place. Fill the three blan
 
 **Links:** GitHub repo (public, MIT licence visible) **[ ]**. Hosted demo on Render **[ ]**. YouTube video **[ ]**.
 
-**Built with:** paypal, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, claude, anthropic, ag-grid, ag-studio, channel3, render, next.js, typescript, postgresql, drizzle
+**Built with:** paypal, paypal-server-sdk, apimatic, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, claude, anthropic, ag-grid, ag-studio, channel3, render, next.js, typescript, postgresql, drizzle
 
 ## Description (paste into "About the project")
 

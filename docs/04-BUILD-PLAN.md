@@ -29,7 +29,7 @@ Hackathon deadline: Thu Nov 12 2026, 12:00 PT. This page lists what is built, wh
 - Carrying `NO_BID` needs to the next week
 - Society creation, invites, real sign-in, account deletion
 - Transaction reporting (`/v1/reporting/transactions`), PayPal Multiparty, Vault
-- PayPal Agent Toolkit at runtime. APIMatic's Context Plugin and the PayPal AI Toolkit were used in Claude Code while building the integration.
+- PayPal Agent Toolkit at runtime. The PayPal AI Toolkit and APIMatic's Context Plugin were used in Claude Code while building the integration; the app itself runs on PayPal's APIMatic-generated Server SDK.
 
 ## Tests
 
