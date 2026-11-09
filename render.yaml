@@ -1,8 +1,9 @@
-# Render Blueprint: web service + managed Postgres. Deploy with "New → Blueprint" on render.com.
+# Render Blueprint for Collective: web service + managed Postgres. Deploy with New > Blueprint on render.com.
+# Paid plans (starter web, basic Postgres) so the demo stays awake and its data persists through judging.
 # Secrets (PayPal, Anthropic, Channel3, AG Studio) are prompted for at deploy time (sync: false).
 services:
   - type: web
-    name: poolcart
+    name: collective
     runtime: node
     plan: starter
     buildCommand: npm ci && npm run build
@@ -11,7 +12,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: poolcart-db
+          name: collective-db
           property: connectionString
       - key: NODE_VERSION
         value: "22"
@@ -31,12 +32,14 @@ services:
         sync: false
       - key: CLAUDE_MODEL
         value: claude-opus-5-5
+      - key: AI_CALLS_PER_HOUR
+        value: "200"
       - key: CHANNEL3_API_KEY
         sync: false
       - key: AG_STUDIO_LICENSE
         sync: false
 
 databases:
-  - name: poolcart-db
+  - name: collective-db
     plan: basic-256mb
-    databaseName: poolcart
+    databaseName: collective
