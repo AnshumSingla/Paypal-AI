@@ -8,11 +8,11 @@
   --pc-ink: #0a2540;
   --pc-muted: #425466;
   --pc-subtle: #8898aa;
-  --pc-canvas: #f6f9fc;
-  --pc-surface: #ffffff;
-  --pc-surface-2: #f0f4f9;
-  --pc-border: #e3e8ee;
-  --pc-border-strong: #cfd7df;
+  --pc-canvas: #f7f3ea;
+  --pc-surface: #fffdf8;
+  --pc-surface-2: #f3eee3;
+  --pc-border: #e7e0d1;
+  --pc-border-strong: #d5cbb6;
   --pc-brand: #0070e0;
   --pc-brand-dark: #003087;
   --pc-brand-soft: #e6f0fd;
@@ -26,7 +26,7 @@
   --pc-success-soft: #e2f6ee;
   --pc-danger: #d64534;
   --pc-danger-soft: #fdecea;
-  --pc-track: #e4e9f1;
+  --pc-track: #ebe5d8;
   --pc-chart-1: #0070e0;
   --pc-chart-2: #4cc3ff;
   --pc-chart-3: #ffbf1f;
@@ -144,12 +144,12 @@
   --font-sans: var(--pc-font);
   --font-display: var(--pc-font-display);
   --font-mono: var(--pc-font-mono);
-  /* Readable floor: body text 16px, secondary 15px, nothing under 13px. */
-  --text-xs: 0.8125rem;
+  /* Readable floor: nothing anyone needs to read is under 14px; body text is 17px. */
+  --text-xs: 0.875rem;
   --text-xs--line-height: 1.45;
-  --text-sm: 0.9375rem;
+  --text-sm: 1rem;
   --text-sm--line-height: 1.5;
-  --text-base: 1rem;
+  --text-base: 1.0625rem;
   --text-base--line-height: 1.6;
 }
 
