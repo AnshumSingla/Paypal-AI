@@ -146,7 +146,7 @@ export default async function SellerPage() {
                     <td>{fmt(po.grossCents)}</td>
                     <td>−{fmt(po.commissionCents)}</td>
                     <td>−{fmt(po.refundsCents)}</td>
-                    <td className="font-bold">{fmt(po.netCents)}</td>
+                    <td className="num font-medium">{fmt(po.netCents)}</td>
                     <td>
                       {PAYOUT_STATUS[po.status] ?? po.status}
                       {po.status === "FAILED" && (

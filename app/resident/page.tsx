@@ -93,7 +93,7 @@ export default async function ResidentPage() {
                     <li key={p.id} className={`rounded-xl border p-4 ${mine ? "border-brand bg-brand-soft/40" : "border-line"}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <div className="font-bold">
+                          <div className="font-medium">
                             {p.product.title} <span className="font-normal text-muted">{p.product.packSize}</span>
                           </div>
                           <div className="text-xs text-muted">
