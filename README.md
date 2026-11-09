@@ -89,6 +89,7 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settle
 |---|---|
 | **AG Grid / AG Studio** | Demand board with trust, in-cell "next price" progress and flashing price changes; ledger and AI decision grids; AG Studio analytics with a supplier-trust page and a Claude-backed analyst (`app/ops/dashboard/claude-adapter.ts`) |
 | **Channel3** | Identifies unfamiliar products on a resident's list. The operator's "Check with Channel3" sets each product's retail price from today's listings (lower median, outliers ignored), so "saved against retail" is measured against a real price (`lib/engine/retail.ts`) |
+| **Bryntum Scheduler** | "This week, step by step" on the resident and captain pages: when lists close, when suppliers bid, when the PayPal hold is placed and charged, the drop, the 24-hour problem window and supplier payouts (`app/_components/WeekTimelineView.tsx`, `lib/schedule.ts`) |
 | **APIMatic** | PayPal's APIMatic-generated Server SDK carries every hold, capture, void and refund (`lib/paypal/gateway.ts`); the APIMatic Context Plugin was used in Claude Code while building it |
 | **Render** | `render.yaml` blueprint: web service and managed Postgres, a health check that reaches the database, and a Deploy to Render button |
 
