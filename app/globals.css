@@ -255,7 +255,7 @@
   .hero-band {
     position: absolute;
     inset: -40% -10% auto -10%;
-    height: 120%;
+    height: 145%;
     transform: skewY(-9deg);
     transform-origin: top left;
     /* Deep navy and PayPal blue under the headline; sky and gold only at the far right. */
