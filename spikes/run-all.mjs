@@ -11,7 +11,6 @@ const scripts = [
   "03-card-decline.mjs",
   "05-payout.mjs",
   "06-channel3.mjs",
-  "07-claude.mjs",
 ];
 for (const s of scripts) {
   console.log(`\n===== ${s}`);

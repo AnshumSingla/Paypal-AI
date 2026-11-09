@@ -10,11 +10,9 @@
     "paypal:wallet": "node 04-wallet-hold.mjs",
     "paypal:payout": "node 05-payout.mjs",
     "channel3": "node 06-channel3.mjs",
-    "claude": "node 07-claude.mjs",
     "all": "node run-all.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.5.0",
     "zod": "^3.25.0"
   }
 }
