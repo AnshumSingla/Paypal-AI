@@ -3,11 +3,12 @@
 import { useEffect, useRef } from "react";
 import "@bryntum/scheduler/scheduler.css";
 import "@bryntum/scheduler/svalbard-light.css";
+import "./bryntum-dark.css";
 import "@bryntum/scheduler/fontawesome/css/fontawesome.css";
 import "@bryntum/scheduler/fontawesome/css/solid.css";
 import type { ScheduleEvent, ScheduleRow } from "@/lib/schedule";
 
-const COLOR: Record<ScheduleEvent["state"], string> = { done: "#9aa0ab", now: "#2f3a8f", next: "#aab3e4" };
+const COLOR: Record<ScheduleEvent["state"], string> = { done: "var(--pc-muted)", now: "var(--pc-brand)", next: "var(--pc-chart-2)" };
 
 export default function WeekTimelineView({ rows, events, startDate, endDate }: { rows: ScheduleRow[]; events: ScheduleEvent[]; startDate: string; endDate: string }) {
   const el = useRef<HTMLDivElement>(null);

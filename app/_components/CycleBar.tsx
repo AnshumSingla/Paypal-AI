@@ -39,16 +39,16 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
               </ActionButton>
             )}
             {cycle.phase === "BID" && (
-              <ActionButton action={simulateBidsAction.bind(null, cycle.id)} className="btn btn-ghost !py-1.5 bg-white">
+              <ActionButton action={simulateBidsAction.bind(null, cycle.id)} className="btn btn-ghost !py-1.5 bg-surface">
                 Add competing suppliers
               </ActionButton>
             )}
             {cycle.phase === "COMMIT" && (
-              <ActionButton action={simulateNeighboursAction.bind(null, cycle.id, 12)} className="btn btn-ghost !py-1.5 bg-white">
+              <ActionButton action={simulateNeighboursAction.bind(null, cycle.id, 12)} className="btn btn-ghost !py-1.5 bg-surface">
                 12 more flats confirm
               </ActionButton>
             )}
-            <ActionButton action={resetDemoAction} className="btn btn-ghost !py-1.5 bg-white" confirm="Reset all demo data back to the start of Week 46?">
+            <ActionButton action={resetDemoAction} className="btn btn-ghost !py-1.5 bg-surface" confirm="Reset all demo data back to the start of Week 46?">
               Reset
             </ActionButton>
           </div>
@@ -56,7 +56,7 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
       </div>
       <ol className="mt-4 grid grid-cols-3 border-t border-line text-xs sm:grid-cols-6">
         {PHASES.map((p, i) => (
-          <li key={p} className={`px-3 py-2.5 font-semibold ${i < idx ? "bg-brand-soft text-brand-dark" : i === idx ? "bg-brand text-white" : "text-muted"}`}>
+          <li key={p} className={`px-3 py-2.5 font-semibold ${i < idx ? "bg-brand-soft text-brand-dark" : i === idx ? "bg-brand text-on-brand" : "text-muted"}`}>
             <span className="opacity-70">{i + 1}.</span> {PHASE_LABEL[p]}
           </li>
         ))}

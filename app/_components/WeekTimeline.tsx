@@ -4,7 +4,7 @@
 import dynamic from "next/dynamic";
 import type { weekSchedule } from "@/lib/schedule";
 
-const View = dynamic(() => import("./WeekTimelineView"), { ssr: false, loading: () => <div className="h-[360px] animate-pulse rounded-lg bg-[#f3f3f1]" /> });
+const View = dynamic(() => import("./WeekTimelineView"), { ssr: false, loading: () => <div className="h-[360px] animate-pulse rounded-lg bg-track" /> });
 
 export function WeekTimeline({ schedule }: { schedule: ReturnType<typeof weekSchedule> }) {
   return (

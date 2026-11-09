@@ -26,7 +26,7 @@ export function Studio({ data, licenseKey, aiEnabled }: { data: DashboardData; l
         : undefined,
     [aiEnabled],
   );
-  if (!inBrowser) return <div className="h-[70vh] animate-pulse rounded-xl bg-white" />;
+  if (!inBrowser) return <div className="h-[70vh] animate-pulse rounded-xl bg-surface" />;
   return (
     <AgStudioProvider licenseKey={licenseKey} modules={ai ? [AgStudioAiModule] : undefined}>
       <AgStudio style={{ height: "100%", width: "100%" }} theme={poolcartStudioTheme} layout={{ widgetBorderEnabled: true }} data={studioData} ai={ai} initialState={defaultReport} mode="view" />

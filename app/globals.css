@@ -18,6 +18,12 @@
   --pc-danger-soft: #fbedeb;
   --pc-info: #2f3a8f;
   --pc-info-soft: #eef0f8;
+  --pc-on-brand: #ffffff;
+  --pc-accent-ink: #7d5a14;
+  --pc-success: #2e6b52;
+  --pc-success-soft: #e9f3ee;
+  --pc-track: #efeff0;
+  color-scheme: light;
   --pc-font: var(--font-mukta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   /* Charts: indigo first, then quiet companions so the accent stays the one strong colour. */
   --pc-chart-1: #2f3a8f;
@@ -30,6 +36,75 @@
   --pc-chart-8: #d8c38f;
   --pc-chart-9: #444b8f;
   --pc-chart-10: #8f939b;
+}
+
+/* Dark: deep blue-grey paper, soft white ink, and a lighter indigo so the accent still reads.
+   Follows the system unless the viewer picks a theme in the header (data-theme on <html>). */
+:root[data-theme="dark"] {
+  --pc-ink: #e7e8ec;
+  --pc-muted: #9ca0aa;
+  --pc-canvas: #14161b;
+  --pc-surface: #1b1e25;
+  --pc-border: #2b2f38;
+  --pc-brand: #8e98f3;
+  --pc-brand-dark: #aab2f7;
+  --pc-brand-soft: #252a45;
+  --pc-accent: #d6a64c;
+  --pc-accent-soft: #2f2816;
+  --pc-danger: #e5786d;
+  --pc-danger-soft: #3a2220;
+  --pc-info: #8e98f3;
+  --pc-info-soft: #252a45;
+  --pc-on-brand: #11142a;
+  --pc-accent-ink: #e4bb6a;
+  --pc-success: #7cc4a4;
+  --pc-success-soft: #1d3029;
+  --pc-track: #2a2e37;
+  --pc-chart-1: #8e98f3;
+  --pc-chart-2: #4d5694;
+  --pc-chart-3: #d6a64c;
+  --pc-chart-4: #9ca0aa;
+  --pc-chart-5: #e5786d;
+  --pc-chart-6: #7cc4a4;
+  --pc-chart-7: #3c414c;
+  --pc-chart-8: #a8915a;
+  --pc-chart-9: #6c76c9;
+  --pc-chart-10: #6b6f78;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pc-ink: #e7e8ec;
+    --pc-muted: #9ca0aa;
+    --pc-canvas: #14161b;
+    --pc-surface: #1b1e25;
+    --pc-border: #2b2f38;
+    --pc-brand: #8e98f3;
+    --pc-brand-dark: #aab2f7;
+    --pc-brand-soft: #252a45;
+    --pc-accent: #d6a64c;
+    --pc-accent-soft: #2f2816;
+    --pc-danger: #e5786d;
+    --pc-danger-soft: #3a2220;
+    --pc-info: #8e98f3;
+    --pc-info-soft: #252a45;
+    --pc-on-brand: #11142a;
+    --pc-accent-ink: #e4bb6a;
+    --pc-success: #7cc4a4;
+    --pc-success-soft: #1d3029;
+    --pc-track: #2a2e37;
+    --pc-chart-1: #8e98f3;
+    --pc-chart-2: #4d5694;
+    --pc-chart-3: #d6a64c;
+    --pc-chart-4: #9ca0aa;
+    --pc-chart-5: #e5786d;
+    --pc-chart-6: #7cc4a4;
+    --pc-chart-7: #3c414c;
+    --pc-chart-8: #a8915a;
+    --pc-chart-9: #6c76c9;
+    --pc-chart-10: #6b6f78;
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
@@ -47,6 +122,11 @@
   --color-danger-soft: var(--pc-danger-soft);
   --color-info: var(--pc-info);
   --color-info-soft: var(--pc-info-soft);
+  --color-on-brand: var(--pc-on-brand);
+  --color-accent-ink: var(--pc-accent-ink);
+  --color-success: var(--pc-success);
+  --color-success-soft: var(--pc-success-soft);
+  --color-track: var(--pc-track);
   --font-sans: var(--pc-font);
 }
 
@@ -129,7 +209,7 @@ h3 {
 }
 .btn-primary {
   background: var(--pc-brand);
-  color: white;
+  color: var(--pc-on-brand);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--pc-brand-dark);
@@ -151,7 +231,8 @@ h3 {
   border: 1px solid var(--pc-border);
   border-radius: 10px;
   padding: 0.5rem 0.7rem;
-  background: white;
+  background: var(--pc-surface);
+  color: var(--pc-ink);
   font-size: 0.9rem;
 }
 .input:focus {

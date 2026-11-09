@@ -20,7 +20,7 @@ export function TourControls({ cycleId, action, jumpTo, jumpLabel }: { cycleId: 
     <div className="flex max-w-sm flex-col items-end gap-1.5">
       <div className="flex gap-2">
         {jumpTo && (
-          <button className="btn btn-ghost bg-white" disabled={pending} onClick={() => go(() => tourJumpAction(jumpTo))}>
+          <button className="btn btn-ghost bg-surface" disabled={pending} onClick={() => go(() => tourJumpAction(jumpTo))}>
             {jumpLabel}
           </button>
         )}

@@ -1,0 +1,95 @@
+/* Bryntum Svalbard dark, as overrides of the light theme the timeline loads. Generated from the
+   :root variables that differ between svalbard-dark.css and svalbard-light.css (@bryntum/scheduler
+   7.3.8). Set on :root because Bryntum resolves its derived variables there. */
+:root[data-theme="dark"]:not(.b-nothing) {
+  --b-elevation-1: 0 1px 3px 0 rgb(0 0 0 /.22), 0 1px 1px 0 rgb(0 0 0 /.2), 0 2px 1px -1px rgb(0 0 0 /.18);
+  --b-elevation-2: 0 1px 5px 0 rgb(0 0 0 /.22), 0 2px 2px 0 rgb(0 0 0 /.2), 0 3px 1px -2px rgb(0 0 0 /.18);
+  --b-neutral-100: hsl(0 0% 10%);
+  --b-neutral-99: hsl(0 0% 10.9%);
+  --b-neutral-98: hsl(0 0% 11.8%);
+  --b-neutral-97: hsl(0 0% 12.7%);
+  --b-neutral-96: hsl(0 0% 13.6%);
+  --b-neutral-95: hsl(0 0% 14.5%);
+  --b-neutral-94: hsl(0 0% 15.4%);
+  --b-neutral-93: hsl(0 0% 16.3%);
+  --b-neutral-92: hsl(0 0% 17.2%);
+  --b-neutral-91: hsl(0 0% 18.1%);
+  --b-neutral-90: hsl(0 0% 19%);
+  --b-neutral-85: hsl(0 0% 23.5%);
+  --b-neutral-80: hsl(0 0% 28%);
+  --b-neutral-75: hsl(0 0% 32.5%);
+  --b-neutral-70: hsl(0 0% 37%);
+  --b-neutral-65: hsl(0 0% 41.5%);
+  --b-neutral-60: hsl(0 0% 46%);
+  --b-neutral-55: hsl(0 0% 50.5%);
+  --b-neutral-50: hsl(0 0% 55%);
+  --b-neutral-45: hsl(0 0% 59.5%);
+  --b-neutral-40: hsl(0 0% 64%);
+  --b-neutral-35: hsl(0 0% 68.5%);
+  --b-neutral-30: hsl(0 0% 73%);
+  --b-neutral-25: hsl(0 0% 77.5%);
+  --b-neutral-20: hsl(0 0% 82%);
+  --b-neutral-15: hsl(0 0% 86.5%);
+  --b-neutral-10: hsl(0 0% 91%);
+  --b-neutral-5: hsl(0 0% 95.5%);
+  --b-neutral-2: hsl(0 0% 97.3%);
+  --b-neutral-1: hsl(0 0% 98.2%);
+  --b-neutral-0: hsl(0 0% 100%);
+  --b-mix: hsl(0 0% 12%);
+  --b-opposite: #fff;
+  --b-widget-color-scheme: dark;
+  --b-popup-background: var(--b-neutral-97);
+  --b-tooltip-rich-background: var(--b-neutral-96);
+  --b-tooltip-plain-background: var(--b-neutral-96);
+  --b-column-lines-tick-color: var(--b-neutral-93);
+  --b-heatmap-start: oklab(.53 -.03 .1);
+  --b-heatmap-end: oklab(.38 .13 .03);
+  --b-heatmap-mix-blend-mode: hard-light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.b-nothing) {
+    --b-elevation-1: 0 1px 3px 0 rgb(0 0 0 /.22), 0 1px 1px 0 rgb(0 0 0 /.2), 0 2px 1px -1px rgb(0 0 0 /.18);
+    --b-elevation-2: 0 1px 5px 0 rgb(0 0 0 /.22), 0 2px 2px 0 rgb(0 0 0 /.2), 0 3px 1px -2px rgb(0 0 0 /.18);
+    --b-neutral-100: hsl(0 0% 10%);
+    --b-neutral-99: hsl(0 0% 10.9%);
+    --b-neutral-98: hsl(0 0% 11.8%);
+    --b-neutral-97: hsl(0 0% 12.7%);
+    --b-neutral-96: hsl(0 0% 13.6%);
+    --b-neutral-95: hsl(0 0% 14.5%);
+    --b-neutral-94: hsl(0 0% 15.4%);
+    --b-neutral-93: hsl(0 0% 16.3%);
+    --b-neutral-92: hsl(0 0% 17.2%);
+    --b-neutral-91: hsl(0 0% 18.1%);
+    --b-neutral-90: hsl(0 0% 19%);
+    --b-neutral-85: hsl(0 0% 23.5%);
+    --b-neutral-80: hsl(0 0% 28%);
+    --b-neutral-75: hsl(0 0% 32.5%);
+    --b-neutral-70: hsl(0 0% 37%);
+    --b-neutral-65: hsl(0 0% 41.5%);
+    --b-neutral-60: hsl(0 0% 46%);
+    --b-neutral-55: hsl(0 0% 50.5%);
+    --b-neutral-50: hsl(0 0% 55%);
+    --b-neutral-45: hsl(0 0% 59.5%);
+    --b-neutral-40: hsl(0 0% 64%);
+    --b-neutral-35: hsl(0 0% 68.5%);
+    --b-neutral-30: hsl(0 0% 73%);
+    --b-neutral-25: hsl(0 0% 77.5%);
+    --b-neutral-20: hsl(0 0% 82%);
+    --b-neutral-15: hsl(0 0% 86.5%);
+    --b-neutral-10: hsl(0 0% 91%);
+    --b-neutral-5: hsl(0 0% 95.5%);
+    --b-neutral-2: hsl(0 0% 97.3%);
+    --b-neutral-1: hsl(0 0% 98.2%);
+    --b-neutral-0: hsl(0 0% 100%);
+    --b-mix: hsl(0 0% 12%);
+    --b-opposite: #fff;
+    --b-widget-color-scheme: dark;
+    --b-popup-background: var(--b-neutral-97);
+    --b-tooltip-rich-background: var(--b-neutral-96);
+    --b-tooltip-plain-background: var(--b-neutral-96);
+    --b-column-lines-tick-color: var(--b-neutral-93);
+    --b-heatmap-start: oklab(.53 -.03 .1);
+    --b-heatmap-end: oklab(.38 .13 .03);
+    --b-heatmap-mix-blend-mode: hard-light;
+  }
+}

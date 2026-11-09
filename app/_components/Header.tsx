@@ -6,6 +6,7 @@ import { payMode } from "@/lib/paypal/gateway";
 import { aiEnabled, aiModel } from "@/lib/ai/claude";
 import { channel3Enabled } from "@/lib/channel3";
 import { PersonaMenu } from "./PersonaMenu";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
   resident: [{ href: "/resident", label: "My week" }],
@@ -25,7 +26,7 @@ export async function Header() {
   const personas = await db.select({ id: s.appUser.id, name: s.appUser.name, role: s.appUser.role }).from(s.appUser).where(eq(s.appUser.isPersona, true));
   const mode = payMode();
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo />
@@ -40,14 +41,15 @@ export async function Header() {
         </nav>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <div className="hidden items-center gap-1.5 lg:flex">
-            <span className={`chip ${mode === "sandbox" ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-[#8a5a12]"}`} title={mode === "sandbox" ? "Real PayPal sandbox API calls" : "No PayPal keys set: an in-process mock with the same rules"}>
+            <span className={`chip ${mode === "sandbox" ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={mode === "sandbox" ? "Real PayPal sandbox API calls" : "No PayPal keys set: an in-process mock with the same rules"}>
               PayPal {mode === "sandbox" ? "sandbox" : "mock"}
             </span>
-            <span className={`chip ${aiEnabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-[#8a5a12]"}`} title={aiEnabled() ? aiModel() : "No Claude key: rule-based fallbacks"}>
+            <span className={`chip ${aiEnabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={aiEnabled() ? aiModel() : "No Claude key: rule-based fallbacks"}>
               AI {aiEnabled() ? "Claude" : "rules"}
             </span>
-            <span className={`chip ${channel3Enabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-[#8a5a12]"}`}>Channel3 {channel3Enabled() ? "on" : "off"}</span>
+            <span className={`chip ${channel3Enabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`}>Channel3 {channel3Enabled() ? "on" : "off"}</span>
           </div>
+          <ThemeToggle />
           <PersonaMenu personas={personas} currentId={user?.id} />
         </div>
       </div>
@@ -62,7 +64,7 @@ export function Logo({ size = 26 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden>
       <rect width="26" height="26" rx="7" fill="var(--pc-brand)" />
       {Array.from({ length: 9 }, (_, i) => (
-        <rect key={i} x={6 + (i % 3) * 5} y={6 + Math.floor(i / 3) * 5} width="3.2" height="3.2" rx="0.8" fill="#fff" opacity={lit.has(i) ? 1 : 0.35} />
+        <rect key={i} x={6 + (i % 3) * 5} y={6 + Math.floor(i / 3) * 5} width="3.2" height="3.2" rx="0.8" fill="var(--pc-on-brand)" opacity={lit.has(i) ? 1 : 0.35} />
       ))}
     </svg>
   );

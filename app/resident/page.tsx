@@ -220,7 +220,7 @@ function Settled({ basket, phase, dropPoint, window }: { basket: NonNullable<Awa
                 </div>
                 {issue && (
                   <div className="mt-1 text-xs">
-                    <span className={`chip ${issue.decision === "pending" ? "bg-accent-soft text-[#8a5a12]" : issue.decision === "rejected" ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-dark"}`}>Issue: {issue.decision.replace("_", " ")}</span>{" "}
+                    <span className={`chip ${issue.decision === "pending" ? "bg-accent-soft text-accent-ink" : issue.decision === "rejected" ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-dark"}`}>Issue: {issue.decision.replace("_", " ")}</span>{" "}
                     <span className="text-muted">{issue.aiAssessment?.rationale}</span>
                   </div>
                 )}

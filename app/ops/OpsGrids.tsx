@@ -21,7 +21,7 @@ const ledgerCols: ColDef<LedgerRow>[] = [
 const decisionCols: ColDef<DecisionRow>[] = [
   { field: "when", valueFormatter: time, maxWidth: 190, sort: "desc" },
   { field: "agent", maxWidth: 170, valueFormatter: (p) => String(p.value).replaceAll("_", " ") },
-  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "#7d5a14", fontWeight: 400 } : { color: "#2f3a8f", fontWeight: 500 }) },
+  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "var(--pc-accent-ink)", fontWeight: 400 } : { color: "var(--pc-brand)", fontWeight: 500 }) },
   { field: "input", maxWidth: 170 },
   { field: "output", headerName: "What it decided", minWidth: 360, tooltipField: "output" },
 ];

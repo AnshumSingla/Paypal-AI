@@ -282,7 +282,7 @@ async function IssuesQueue({ db, cycleId }: { db: Awaited<ReturnType<typeof getS
                 )}
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span className={`num chip ${i.decision === "pending" ? "bg-accent-soft text-[#7d5a14]" : i.decision === "rejected" ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-dark"}`}>
+                <span className={`num chip ${i.decision === "pending" ? "bg-accent-soft text-accent-ink" : i.decision === "rejected" ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-dark"}`}>
                   {ISSUE_DECISION[i.decision]}
                   {i.refundCents ? ` ${fmt(i.refundCents)}` : ""}
                 </span>

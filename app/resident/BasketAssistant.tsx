@@ -86,14 +86,14 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
                     You wrote “{l.raw}”. {l.brand ? `Brand: ${l.brand}.` : "Any brand."}
                     {l.matchedVia === "channel3" ? " Matched with Channel3." : ""}
                   </div>
-                  {l.clarification && !l.restricted ? <div className="text-xs text-[#7d5a14]">{l.clarification}</div> : null}
+                  {l.clarification && !l.restricted ? <div className="text-xs text-accent-ink">{l.clarification}</div> : null}
                 </div>
                 {l.restricted ? (
                   <span className="chip bg-danger-soft text-danger">Can&apos;t be sold here</span>
                 ) : l.productId ? (
                   <span className="num chip bg-brand-soft text-brand-dark">{l.retailRefCents ? `Retail $${(l.retailRefCents / 100).toFixed(2)}` : "Retail price unknown"}</span>
                 ) : (
-                  <span className="chip bg-accent-soft text-[#7d5a14]">No match found</span>
+                  <span className="chip bg-accent-soft text-accent-ink">No match found</span>
                 )}
                 <button className="text-xs text-muted hover:text-danger" onClick={() => setLines(lines.filter((_, j) => j !== i))}>
                   Remove

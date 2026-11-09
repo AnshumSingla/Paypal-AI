@@ -32,7 +32,7 @@ export function PlanCard({ current, mode, clientId, planIds }: { current: string
             <div className="text-xl font-semibold">{p.commission}</div>
             <div className="text-xs text-muted">commission. {p.perks}.</div>
             {current === p.id ? (
-              <span className="chip mt-2 bg-brand text-white">Current</span>
+              <span className="chip mt-2 bg-brand text-on-brand">Current</span>
             ) : p.id !== "starter" ? (
               <button className="btn btn-ghost mt-2 !py-1 text-xs" onClick={() => setChoice(p.id)}>
                 Upgrade

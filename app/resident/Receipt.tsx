@@ -48,7 +48,7 @@ export function Receipt({ basket }: { basket: B }) {
         )}
       </div>
       {/* One bar: the charged part of the hold, the rest released. */}
-      <div className="mt-4 h-2 w-full max-w-xl overflow-hidden rounded-full bg-[#efeff0]" role="img" aria-label={`Charged ${chargedShare}% of the hold`}>
+      <div className="mt-4 h-2 w-full max-w-xl overflow-hidden rounded-full bg-track" role="img" aria-label={`Charged ${chargedShare}% of the hold`}>
         <div className="h-full rounded-full bg-brand" style={{ width: `${chargedShare}%` }} />
       </div>
       {steps.length > 0 && (

@@ -5,27 +5,27 @@ import { Grid, money } from "@/app/_components/Grid";
 type Row = { id: string; product: string; pack: string; status: string; demand: number; bids: number; seller: string; trust: number | null; moq: number | null; committed: number; unit: number | null; nextNeeded: number | null; nextUnit: number | null; retail: number; savings: number | null; note: string };
 
 export const POOL_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  OPEN_FOR_BIDS: { label: "Open for bids", bg: "#eef0f8", fg: "#2f3a8f" },
-  PRICED: { label: "Taking orders", bg: "#f8f2e4", fg: "#7d5a14" },
-  SUCCEEDED: { label: "Ordered", bg: "#e9f3ee", fg: "#2e6b52" },
-  DELIVERED: { label: "Delivered", bg: "#e9f3ee", fg: "#2e6b52" },
-  FAILED: { label: "Missed minimum", bg: "#fbedeb", fg: "#b4443a" },
-  NO_BID: { label: "No bids", bg: "#fbedeb", fg: "#b4443a" },
+  OPEN_FOR_BIDS: { label: "Open for bids", bg: "var(--pc-brand-soft)", fg: "var(--pc-brand)" },
+  PRICED: { label: "Taking orders", bg: "var(--pc-accent-soft)", fg: "var(--pc-accent-ink)" },
+  SUCCEEDED: { label: "Ordered", bg: "var(--pc-success-soft)", fg: "var(--pc-success)" },
+  DELIVERED: { label: "Delivered", bg: "var(--pc-success-soft)", fg: "var(--pc-success)" },
+  FAILED: { label: "Missed minimum", bg: "var(--pc-danger-soft)", fg: "var(--pc-danger)" },
+  NO_BID: { label: "No bids", bg: "var(--pc-danger-soft)", fg: "var(--pc-danger)" },
 };
 
 function StatusCell({ value }: { value: string }) {
-  const st = POOL_STATUS[value] ?? { label: value, bg: "#efeff0", fg: "#6b6f78" };
+  const st = POOL_STATUS[value] ?? { label: value, bg: "var(--pc-track)", fg: "var(--pc-muted)" };
   return <span style={{ padding: "2px 9px", borderRadius: 99, fontSize: 12, fontWeight: 500, background: st.bg, color: st.fg }}>{st.label}</span>;
 }
 
 /** How close the building is to the next cheaper price, as a small bar inside the cell. */
 function NextPriceCell({ data }: { data?: Row }) {
-  if (!data || data.nextNeeded == null || data.nextUnit == null) return data?.unit ? <span style={{ color: "#2e6b52" }}>Best price reached</span> : null;
+  if (!data || data.nextNeeded == null || data.nextUnit == null) return data?.unit ? <span style={{ color: "var(--pc-success)" }}>Best price reached</span> : null;
   const target = data.committed + data.nextNeeded;
   const pct = Math.round((data.committed / target) * 100);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
-      <div style={{ flex: 1, height: 6, borderRadius: 99, background: "#efeff0", overflow: "hidden", minWidth: 48 }}>
+      <div style={{ flex: 1, height: 6, borderRadius: 99, background: "var(--pc-track)", overflow: "hidden", minWidth: 48 }}>
         <div style={{ width: `${pct}%`, height: "100%", borderRadius: 99, background: "var(--pc-brand)", transition: "width 600ms ease-out" }} />
       </div>
       <span style={{ whiteSpace: "nowrap" }}>

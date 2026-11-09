@@ -8,7 +8,7 @@ export function TierBar({ tiers, committed, pending = 0, retail }: { tiers: Tier
   return (
     <div className="w-full">
       {/* Widths animate when neighbours join, so the drop to a cheaper tier is visible. */}
-      <div className="relative h-2.5 rounded-full bg-[#efeff0]">
+      <div className="relative h-2.5 rounded-full bg-track">
         <div className="absolute inset-y-0 left-0 rounded-full bg-brand/25 transition-[width] duration-700 ease-out" style={{ width: pctOf(committed + pending) }} />
         <div className="absolute inset-y-0 left-0 rounded-full bg-brand transition-[width] duration-700 ease-out" style={{ width: pctOf(committed) }} />
         {tiers.map((t) => (

@@ -48,7 +48,7 @@ export function BidBuilder({ poolId, demand, retailCents, title, existing }: { p
           <input className="input" placeholder="optional" value={cost} onChange={(e) => setCost(e.target.value)} />
         </label>
         <button
-          className="btn btn-ghost bg-white"
+          className="btn btn-ghost bg-surface"
           disabled={pending}
           onClick={() =>
             start(async () => {
@@ -70,7 +70,7 @@ export function BidBuilder({ poolId, demand, retailCents, title, existing }: { p
         <span className="label">Price breaks, per pack delivered to the building</span>
         <div className="mt-1 flex flex-wrap gap-2">
           {tiers.map((t, i) => (
-            <div key={i} className="flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-1">
+            <div key={i} className="flex items-center gap-1 rounded-lg border border-line bg-surface px-2 py-1">
               <input type="number" className="w-14 text-right" value={t.minQty} disabled={i === 0} onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, minQty: Number(e.target.value) } : x)))} />
               <span className="text-muted">or more at $</span>
               <input className="w-16" value={t.price} onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} />
@@ -82,7 +82,7 @@ export function BidBuilder({ poolId, demand, retailCents, title, existing }: { p
             </div>
           ))}
           {tiers.length < 5 && (
-            <button className="btn btn-ghost !py-1 bg-white" onClick={() => setTiers([...tiers, { minQty: (tiers.at(-1)?.minQty ?? moq) + 10, price: dollars(cents(tiers.at(-1)?.price ?? "1") - 20) }])}>
+            <button className="btn btn-ghost !py-1 bg-surface" onClick={() => setTiers([...tiers, { minQty: (tiers.at(-1)?.minQty ?? moq) + 10, price: dollars(cents(tiers.at(-1)?.price ?? "1") - 20) }])}>
               Add price break
             </button>
           )}

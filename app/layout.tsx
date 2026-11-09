@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Mukta } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Header } from "./_components/Header";
 
@@ -15,8 +16,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={mukta.variable}>
+    <html lang="en" className={mukta.variable} suppressHydrationWarning>
       <body className="min-h-screen">
+        {/* Apply a saved light or dark choice before the page hydrates. */}
+        <Script id="theme" strategy="beforeInteractive">{`try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`}</Script>
         <Header />
         <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
         <footer className="mx-auto max-w-7xl px-4 pb-10 pt-4 text-xs text-muted">Collective is a PayPal AI Hackathon demo. It runs on the PayPal sandbox, so no real money moves. Prices are in US dollars.</footer>
