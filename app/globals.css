@@ -82,6 +82,26 @@ h3 {
   border-radius: 12px;
 }
 
+/* Landing page: the price ladder lights up step by step, then the price paid appears. */
+@keyframes pc-step-on {
+  from {
+    background-color: transparent;
+    color: var(--pc-muted);
+  }
+}
+@keyframes pc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ladder-step {
+  animation: pc-step-on 500ms ease-out both;
+}
+.paid-reveal {
+  animation: pc-fade-up 600ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

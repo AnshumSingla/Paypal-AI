@@ -53,15 +53,17 @@ export default async function Home() {
               </div>
               <div>
                 <div className="label">Paid, per pack</div>
-                <div className="mt-1 text-3xl font-semibold text-brand">{fmt(ex.p.finalUnitCents)}</div>
+                <div className="paid-reveal mt-1 text-3xl font-semibold text-brand" style={{ animationDelay: `${300 + ex.b.tiers.filter((t) => (ex.p.keptQty ?? 0) >= t.minQty).length * 450}ms` }}>
+                  {fmt(ex.p.finalUnitCents)}
+                </div>
               </div>
             </div>
             {/* The price ladder: each step down is a tier the building's combined order reached. */}
             <ol className="num mt-6 space-y-1.5" aria-label="Price tiers">
-              {ex.b.tiers.map((t) => {
+              {ex.b.tiers.map((t, i) => {
                 const reached = (ex.p.keptQty ?? 0) >= t.minQty;
                 return (
-                  <li key={t.minQty} className={`flex items-center justify-between rounded-md px-3 py-1.5 text-sm ${reached ? "bg-brand-soft text-brand-dark" : "text-muted"}`}>
+                  <li key={t.minQty} className={`flex items-center justify-between rounded-md px-3 py-1.5 text-sm ${reached ? "ladder-step bg-brand-soft text-brand-dark" : "text-muted"}`} style={reached ? { animationDelay: `${300 + i * 450}ms` } : undefined}>
                     <span>{t.minQty}+ packs</span>
                     <span className={reached ? "font-medium" : ""}>{fmt(t.unitCents)}</span>
                   </li>
