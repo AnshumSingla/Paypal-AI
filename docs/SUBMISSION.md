@@ -54,9 +54,10 @@ Sandbox only. The Pune demo runs in US dollars because PayPal doesn't process do
 
 ## Testing instructions (paste into "Testing instructions")
 1. Open the hosted demo **[ ]** or run locally: `npm install && npm run dev`, then http://localhost:3000. No keys are needed.
-2. Pick any person. Use the **Guided demo** bar at the top: one button per step, and it opens the right person's view.
-3. On the resident's page during Confirm & pay, approve the hold with the PayPal button (sandbox personal account **[ ]**), or use **Hold with a PayPal sandbox test card**.
-4. **Reset** (demo controls) returns to the start of Week 46 at any time.
+2. Press **Take the guided tour** on the home page. Each step spotlights the part of the page it is about, explains what could go wrong, and runs for real, opening the right person's view. Arrow key to continue, Esc to hide, **Resume** to bring it back.
+3. At the edge cases, choose what happens: a neighbour's card is declined, or Ananya withdraws and her hold is voided; a missing pack the Secretary refunds itself, or a bigger claim the captain approves or rejects.
+4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**.
+5. **Start over** on the home page (or Reset under Manual controls) returns to Week 46 at any time.
 
 ## Video script (2 minutes 45 seconds)
 
