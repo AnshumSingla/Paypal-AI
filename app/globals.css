@@ -258,12 +258,16 @@
     height: 120%;
     transform: skewY(-9deg);
     transform-origin: top left;
-    background: linear-gradient(115deg, #003087 0%, #0070e0 30%, #4cc3ff 55%, #ffd140 78%, #ff9f6b 100%);
-    background-size: 200% 200%;
+    /* Deep navy and PayPal blue under the headline; sky and gold only at the far right. */
+    background: linear-gradient(105deg, #001c64 0%, #003087 28%, #0059c9 50%, #0070e0 64%, #4cc3ff 84%, #ffd140 100%);
+    background-size: 120% 100%;
     animation: pc-drift 18s ease-in-out infinite alternate;
     opacity: 0.95;
   }
   @keyframes pc-drift {
+    from {
+      background-position: 0% 50%;
+    }
     to {
       background-position: 100% 50%;
     }
