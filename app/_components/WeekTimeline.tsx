@@ -8,7 +8,7 @@ const View = dynamic(() => import("./WeekTimelineView"), { ssr: false, loading: 
 
 export function WeekTimeline({ schedule }: { schedule: ReturnType<typeof weekSchedule> }) {
   return (
-    <section className="card p-5" aria-labelledby="week-timeline">
+    <section id="week-timeline-section" className="card scroll-mt-24 p-5" aria-labelledby="week-timeline">
       <h2 id="week-timeline" className="text-lg font-semibold">
         This week, step by step
       </h2>

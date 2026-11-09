@@ -13,7 +13,7 @@ const PLACEHOLDER = {
 export async function SecretaryPanel({ db, cycleId, role }: { db: DB; cycleId: string; role: keyof typeof PLACEHOLDER }) {
   const feed = await secretaryFeed(db, cycleId, 8);
   return (
-    <section className="card p-5" aria-labelledby="secretary-title">
+    <section id="secretary" className="card scroll-mt-24 p-5" aria-labelledby="secretary-title">
       <h2 id="secretary-title" className="text-base font-semibold">
         Society Secretary
       </h2>

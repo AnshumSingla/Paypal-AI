@@ -1,4 +1,5 @@
 // Phase stepper + demo clock shown at the top of every role page.
+import { getSession } from "@/lib/session";
 import type * as s from "@/lib/db/schema";
 import { PHASE_LABEL, PHASES } from "@/lib/engine/cycle";
 import { demoMode } from "@/lib/engine/demo";
@@ -14,18 +15,30 @@ const NEXT_LABEL: Record<string, string> = {
   RESOLVE: "Close issue window and pay suppliers",
 };
 
-export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferSelect; societyName: string }) {
+function greeting() {
+  const h = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" }).format(new Date()));
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+
+export async function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferSelect; societyName: string }) {
   const idx = PHASES.indexOf(cycle.phase);
+  const { user } = await getSession();
   return (
+    <>
+    <header className="mb-6">
+      <h1 className="text-3xl font-semibold tracking-tight">
+        {greeting()}, {(user?.name ?? "").split(" ")[0]}
+      </h1>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
+        <span className="chip border border-line-strong bg-surface text-ink">{cycle.weekLabel}</span>
+        <span className="font-medium text-brand">{PHASE_LABEL[cycle.phase]}</span>
+        <span>{societyName}</span>
+      </div>
+    </header>
     <section className="card mb-6 overflow-hidden">
       {demoMode() && <TourBar cycle={cycle} />}
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
-        <div>
-          <div className="label">{societyName}</div>
-          <h1 className="text-xl font-semibold">
-            {cycle.weekLabel}: <span className="text-brand">{PHASE_LABEL[cycle.phase]}</span>
-          </h1>
-        </div>
+        <div className="text-sm font-semibold text-muted">This week, step {idx + 1} of {PHASES.length}</div>
         {demoMode() && (
           <details className="group relative">
             <summary className="btn btn-ghost cursor-pointer list-none text-sm marker:content-none">Manual controls</summary>
@@ -65,5 +78,6 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
         ))}
       </ol>
     </section>
+    </>
   );
 }
