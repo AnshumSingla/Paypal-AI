@@ -12,6 +12,7 @@ import { CycleBar } from "@/app/_components/CycleBar";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { ActivityFeed, Kpi } from "@/app/_components/Bits";
 import { PoolGrid } from "./PoolGrid";
+import { AutoRefresh } from "@/app/_components/AutoRefresh";
 
 export const metadata: Metadata = { title: "Captain console" };
 
@@ -52,6 +53,7 @@ export default async function CaptainPage() {
     <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
       <div className="min-w-0">
         <CycleBar cycle={cycle} societyName={`${society.name}, captain console`} />
+        {cycle.phase === "COMMIT" && <AutoRefresh />}
         <div className="mb-6 grid gap-3 sm:grid-cols-4">
           <Kpi label="Households with needs" value={String(needStats.households)} sub={`${needStats.packs} packs requested${needStats.photo ? `, ${needStats.photo} from photos` : ""}`} />
           <Kpi label="Pools" value={String(pools.length)} sub={`${pools.filter((p) => ["PRICED", "SUCCEEDED", "DELIVERED"].includes(p.status)).length} priced`} />

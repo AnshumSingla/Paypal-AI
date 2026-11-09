@@ -8,7 +8,7 @@ import { payMode } from "@/lib/paypal/gateway";
 import { planIds } from "@/lib/paypal/subscriptions";
 import { COMMISSION_BPS } from "@/lib/engine/pricing";
 import { fmt } from "@/lib/util/money";
-import { retryPayoutAction, withdrawBidAction } from "@/app/actions";
+import { refreshPayoutsAction, retryPayoutAction, withdrawBidAction } from "@/app/actions";
 import { CycleBar } from "@/app/_components/CycleBar";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { Kpi } from "@/app/_components/Bits";
@@ -117,7 +117,14 @@ export default async function SellerPage() {
         <PlanCard current={seller.plan} mode={payMode()} clientId={process.env.PAYPAL_CLIENT_ID} planIds={ids} />
         <div className="card p-5">
           <h2 className="text-lg font-semibold">Payouts</h2>
-          <p className="text-xs text-muted">Sent with PayPal Payouts to {seller.payoutEmail} after each 24h issue window.</p>
+          <p className="text-xs text-muted">Sent with PayPal Payouts to {seller.payoutEmail} once the 24-hour window for problems closes.</p>
+          {payouts.some((p) => p.po.status === "SENT") && (
+            <div className="mt-2">
+              <ActionButton action={refreshPayoutsAction} className="btn btn-ghost !py-1 text-xs">
+                Check payout status with PayPal
+              </ActionButton>
+            </div>
+          )}
           {!payouts.length ? (
             <p className="mt-4 text-sm text-muted">No payouts yet.</p>
           ) : (

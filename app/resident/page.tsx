@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 import { basketView, needsView, poolsView, societyContext } from "@/lib/queries";
 import { payMode } from "@/lib/paypal/gateway";
 import { fmt } from "@/lib/util/money";
-import { removeNeedAction, withdrawAction, markReceivedAction } from "@/app/actions";
+import { removeNeedAction, withdrawAction, markReceivedAction, testCardHoldAction } from "@/app/actions";
 import { CycleBar } from "@/app/_components/CycleBar";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { TierBar } from "@/app/_components/TierBar";
@@ -13,6 +13,7 @@ import { Checkout } from "./Checkout";
 import { QtyStepper } from "./QtyStepper";
 import { IssueForm } from "./IssueForm";
 import { Receipt } from "./Receipt";
+import { AutoRefresh } from "@/app/_components/AutoRefresh";
 import { SecretaryPanel } from "@/app/_components/SecretaryPanel";
 
 export const metadata: Metadata = { title: "My week" };
@@ -34,6 +35,7 @@ export default async function ResidentPage() {
   return (
     <div>
       <CycleBar cycle={cycle} societyName={`${society.name}, flat ${household.unitLabel}`} />
+      {cycle.phase === "COMMIT" && held && <AutoRefresh />}
 
       {cycle.phase === "COLLECT" && (
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -149,11 +151,21 @@ export default async function ResidentPage() {
                       PayPal hold of <b className="num">{fmt(basket.basket.ceilingCents)}</b> placed. You&apos;re charged the final price at cutoff.
                     </div>
                     <ActionButton action={withdrawAction.bind(null, cycle.id)} className="btn btn-danger w-full" confirm="Withdraw and void your PayPal hold?">
-                      Withdraw &amp; release hold
+                      Withdraw and release my hold
                     </ActionButton>
                   </div>
                 ) : (
-                  <Checkout cycleId={cycle.id} mode={payMode()} clientId={process.env.PAYPAL_CLIENT_ID} ceilingCents={ceiling} />
+                  <>
+                    <Checkout cycleId={cycle.id} mode={payMode()} clientId={process.env.PAYPAL_CLIENT_ID} ceilingCents={ceiling} />
+                    {payMode() === "sandbox" && (
+                      <div className="border-t border-line pt-3">
+                        <ActionButton action={testCardHoldAction.bind(null, cycle.id)} className="btn btn-ghost w-full">
+                          Hold with a PayPal sandbox test card
+                        </ActionButton>
+                        <p className="mt-1 text-xs text-muted">No sandbox login? This places the same real sandbox hold with PayPal&apos;s published test card.</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

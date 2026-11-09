@@ -2,6 +2,8 @@
 // for each step so anyone can check them in the sandbox account.
 import type { basketView } from "@/lib/queries";
 import { fmt } from "@/lib/util/money";
+import { verifyPaymentAction } from "@/app/actions";
+import { ActionButton } from "@/app/_components/ActionButton";
 
 type B = NonNullable<Awaited<ReturnType<typeof basketView>>>;
 
@@ -61,6 +63,13 @@ export function Receipt({ basket }: { basket: B }) {
             </li>
           ))}
         </ol>
+      )}
+      {pay && (
+        <div className="mt-3">
+          <ActionButton action={verifyPaymentAction.bind(null, pay.id)} className="btn btn-ghost !py-1.5 text-sm">
+            Check this with PayPal
+          </ActionButton>
+        </div>
       )}
       {pay?.mode === "mock" && <p className="mt-2 text-xs text-muted">Running without PayPal keys, so these IDs come from the built-in stand-in, not the sandbox.</p>}
     </section>

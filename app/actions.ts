@@ -8,9 +8,9 @@ import { getSession, homeFor, SESSION_COOKIE } from "@/lib/session";
 import * as s from "@/lib/db/schema";
 import { newId } from "@/lib/util/ids";
 import { PolicyError } from "@/lib/engine/pricing";
-import { PayPalError } from "@/lib/paypal/gateway";
+import { gateway, PayPalError } from "@/lib/paypal/gateway";
 import { advance, rankPool, selectWinner, submitBid } from "@/lib/engine/cycle";
-import { completeCheckout, getOrCreateBasket, markReceived, setLineQty, startCheckout, withdrawBasket } from "@/lib/engine/basket";
+import { cardCheckout, completeCheckout, getOrCreateBasket, markReceived, setLineQty, startCheckout, withdrawBasket } from "@/lib/engine/basket";
 import { decideIssue, reportIssue } from "@/lib/engine/refunds";
 import { retryPayout } from "@/lib/engine/payouts";
 import { demoMode, resetDemo, simulateCompetingBids, simulateNeighbours, startNextCycle } from "@/lib/engine/demo";
@@ -147,6 +147,50 @@ export async function finishCheckoutAction(cycleId: string, orderId: string) {
     const bk = await getOrCreateBasket(db, cycleId, household!.id);
     await completeCheckout(db, bk.id, orderId, user.name);
     return { message: "Hold placed. You'll be charged the final group price at cutoff." };
+  });
+}
+
+/** Judges without a PayPal sandbox login: the same real sandbox hold, placed with PayPal's published test card. */
+export async function testCardHoldAction(cycleId: string) {
+  return guard(async () => {
+    const { db, household, user } = await require(["resident", "captain"]);
+    const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    if (c?.phase !== "COMMIT") throw new PolicyError("Holds can only be placed during Confirm & pay.");
+    const bk = await getOrCreateBasket(db, cycleId, household!.id);
+    if (bk.status === "AUTHORIZED") throw new PolicyError("Your hold is already in place.");
+    await db.update(s.payment).set({ status: "SUPERSEDED" }).where(and(eq(s.payment.basketId, bk.id), eq(s.payment.status, "CREATED")));
+    await cardCheckout(db, bk.id, user.name);
+    return { message: "Hold placed with the sandbox test card. You're charged the final price at cutoff." };
+  });
+}
+
+/** Ask PayPal directly what happened to this resident's hold: the proof behind the receipt. */
+export async function verifyPaymentAction(paymentId: string) {
+  return guard(async () => {
+    const { db, household } = await require(["resident", "captain"]);
+    const [r] = await db.select({ p: s.payment, bk: s.basket }).from(s.payment).innerJoin(s.basket, eq(s.payment.basketId, s.basket.id)).where(eq(s.payment.id, paymentId));
+    if (!r || r.bk.householdId !== household?.id || !r.p.paypalAuthorizationId) throw new PolicyError("Payment not found.");
+    const a = await gateway().getAuthorization(r.p.paypalAuthorizationId);
+    const words: Record<string, string> = { CAPTURED: "charged and closed", PARTIALLY_CAPTURED: "partly charged", VOIDED: "released, nothing charged", CREATED: "still held", PENDING: "pending", DENIED: "declined", EXPIRED: "expired" };
+    return { message: `PayPal ${gateway().mode === "sandbox" ? "sandbox" : "stand-in"} confirms: hold of $${(a.amountCents / 100).toFixed(2)} is ${words[a.status] ?? a.status.toLowerCase()}.` };
+  });
+}
+
+/** Refresh payout statuses from PayPal Payouts (a batch starts as "sent" and settles later). */
+export async function refreshPayoutsAction() {
+  return guard(async () => {
+    const { db, seller } = await require(["seller", "operator"]);
+    const rows = await db.select().from(s.payout).where(seller ? and(eq(s.payout.sellerId, seller.id), eq(s.payout.status, "SENT")) : eq(s.payout.status, "SENT"));
+    let updated = 0;
+    for (const po of rows) {
+      if (!po.paypalBatchId) continue;
+      const b = await gateway().getPayoutBatch(po.paypalBatchId);
+      if (b.status === "SUCCESS") {
+        await db.update(s.payout).set({ status: "SUCCESS" }).where(eq(s.payout.id, po.id));
+        updated++;
+      }
+    }
+    return { message: rows.length ? `Checked ${rows.length} payout${rows.length === 1 ? "" : "s"} with PayPal; ${updated} now paid.` : "All payouts are already settled." };
   });
 }
 
