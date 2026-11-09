@@ -25,12 +25,12 @@ function providers(): Provider[] {
   const list: Provider[] = [];
   const gemini = process.env.GEMINI_API_KEY;
   if (gemini) {
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
     list.push({ name: "gemini", base: "https://generativelanguage.googleapis.com/v1beta/openai", key: gemini, model, visionModel: model });
   }
   const groq = process.env.GROQ_API_KEY;
   if (groq) {
-    list.push({ name: "groq", base: "https://api.groq.com/openai/v1", key: groq, model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile", visionModel: process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct" });
+    list.push({ name: "groq", base: "https://api.groq.com/openai/v1", key: groq, model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", visionModel: process.env.GROQ_VISION_MODEL || "" });
   }
   return list;
 }
@@ -45,7 +45,8 @@ export const aiModel = () => {
 
 // ------------------------------------------------------------------ OpenAI-compatible wire types
 export type ChatPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
-export type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+// extra_content carries Gemini's thought signature; it must be sent back with the call in the next turn.
+export type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string }; extra_content?: unknown };
 export type ChatMessage =
   | { role: "system"; content: string }
   | { role: "user"; content: string | ChatPart[] }
@@ -77,13 +78,20 @@ export async function llmChat(req: ChatRequest, opts: { signal?: AbortSignal } =
   if (!list.length) throw new Error("No AI provider key set (GEMINI_API_KEY or GROQ_API_KEY)");
   const errors: string[] = [];
   for (const p of list) {
-    const model = hasImages(req.messages) ? p.visionModel : p.model;
+    const images = hasImages(req.messages);
+    const model = images ? p.visionModel : p.model;
+    if (!model) {
+      errors.push(`${p.name}: no vision model configured`);
+      continue;
+    }
+    // Only Gemini understands its own thought signatures; other providers get plain tool calls.
+    const messages = p.name === "gemini" ? req.messages : req.messages.map((m) => (m.role === "assistant" && m.tool_calls ? { ...m, tool_calls: m.tool_calls.map(({ extra_content: _x, ...c }) => c) } : m)); // eslint-disable-line @typescript-eslint/no-unused-vars
     try {
       const signal = opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(60_000)]) : AbortSignal.timeout(60_000);
       const res = await fetch(`${p.base}/chat/completions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.key}` },
-        body: JSON.stringify({ model, ...req }),
+        body: JSON.stringify({ model, ...req, messages }),
         signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).replace(/\s+/g, " ").slice(0, 300)}`);
@@ -91,7 +99,7 @@ export async function llmChat(req: ChatRequest, opts: { signal?: AbortSignal } =
       const choice = body.choices?.[0];
       if (!choice?.message) throw new Error("response had no message");
       // Some providers leave tool-call ids empty; give every call an id so tool results can match it.
-      const tool_calls = choice.message.tool_calls?.map((t, i) => ({ id: t.id || `call_${Date.now()}_${i}`, type: "function" as const, function: { name: t.function.name, arguments: t.function.arguments || "{}" } }));
+      const tool_calls = choice.message.tool_calls?.map((t, i) => ({ id: t.id || `call_${Date.now()}_${i}`, type: "function" as const, function: { name: t.function.name, arguments: t.function.arguments || "{}" }, ...(t.extra_content ? { extra_content: t.extra_content } : {}) }));
       const used = `${p.name}:${model}`;
       g.__llmLastModel = used;
       return {

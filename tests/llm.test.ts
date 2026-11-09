@@ -24,13 +24,16 @@ beforeEach(() => {
   process.env.GEMINI_API_KEY = "g-key";
   process.env.GROQ_API_KEY = "q-key";
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete process.env.GROQ_VISION_MODEL;
+});
 
 describe("llmJSON", () => {
   it("falls back from Gemini to Groq on a 429", async () => {
     mockFetch([429, { error: "quota" }], reply({ content: '{"answer": 42}' }));
     const r = await llmJSON({ system: "s", prompt: "p", schema: z.object({ answer: z.number() }) });
-    expect(r).toEqual({ data: { answer: 42 }, model: "groq:llama-3.3-70b-versatile" });
+    expect(r).toEqual({ data: { answer: 42 }, model: "groq:openai/gpt-oss-120b" });
     expect(sent.map((s) => [s.url, s.auth])).toEqual([
       ["https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "Bearer g-key"],
       ["https://api.groq.com/openai/v1/chat/completions", "Bearer q-key"],
@@ -42,10 +45,11 @@ describe("llmJSON", () => {
     await expect(llmJSON({ system: "s", prompt: "p", schema: z.object({}) })).rejects.toThrow(/All AI providers failed \(gemini: HTTP 401.*; groq: HTTP 401/);
   });
 
-  it("sends images to Groq's vision model", async () => {
+  it("sends images to Groq's vision model when one is configured", async () => {
+    process.env.GROQ_VISION_MODEL = "vision-test-model";
     mockFetch([503, {}], reply({ content: "{}" }));
     await llmJSON({ system: "s", prompt: "p", images: ["data:image/png;base64,AAAA"], schema: z.object({}) });
-    expect(sent[1].body.model).toBe("meta-llama/llama-4-scout-17b-16e-instruct");
+    expect(sent[1].body.model).toBe("vision-test-model");
   });
 });
 
