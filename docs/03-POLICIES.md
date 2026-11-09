@@ -119,7 +119,7 @@ In the demo the supplier's answer is a rule in code: concede about 4% of retail 
 
 - Suppliers see pool totals and the society name only, never who ordered what. Enforced in the supplier pages and the supplier's Secretary tools.
 - Collective stores PayPal ids and amounts, not payment details.
-- Lists, list photos and issue photos are sent to the Claude API when AI is on. Issue photos are stored in the database.
+- Lists, list photos and issue photos are sent to the Gemini API (or Groq, if Gemini fails) when AI is on. Issue photos are stored in the database.
 - Nudges and account deletion are not built.
 
 ## 14. AI guardrails
@@ -130,8 +130,8 @@ In the demo the supplier's answer is a rule in code: concede about 4% of retail 
 | 14.2 Scores, prices, tier validity and refund caps are computed in code; AI explains, flags and proposes. | Enforced |
 | 14.3 Every agent run is logged in `ai_decision` with the model, or `rules` for the fallback, and shown in the operator's AI log. | Enforced |
 | 14.4 Resident and supplier free text is wrapped as data in every prompt. | Enforced (`asData`) |
-| 14.5 If Claude is off, fails, refuses or returns invalid output, a rules fallback runs, so the cycle never blocks on AI. If a Secretary tool already acted, the fallback does not act again. | Enforced |
-| 14.6 Claude calls are capped per hour (`AI_CALLS_PER_HOUR`). | Enforced |
+| 14.5 If AI is off, fails, or returns invalid output, a rules fallback runs, so the cycle never blocks on AI. If a Secretary tool already acted, the fallback does not act again. | Enforced |
+| 14.6 AI calls are capped per hour (`AI_CALLS_PER_HOUR`). | Enforced |
 
 ## 15. Product restrictions
 

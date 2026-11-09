@@ -30,8 +30,8 @@ flowchart LR
 
 | Step | What happens | AI | PayPal |
 |---|---|---|---|
-| 1. Collect | Residents type a list or photograph a handwritten one | Basket Assistant (Claude vision) turns it into products and blocks restricted items; Channel3 matches unknown items | |
-| 2. Bid | Each product becomes a pool. Suppliers see totals only and bid a ladder of prices that drop as the order grows | Bids are scored in code (price 40, trust 45, reachable minimum 15); Claude explains the ranking | |
+| 1. Collect | Residents type a list or photograph a handwritten one | Basket Assistant (Gemini vision) turns it into products and blocks restricted items; Channel3 matches unknown items | |
+| 2. Bid | Each product becomes a pool. Suppliers see totals only and bid a ladder of prices that drop as the order grows | Bids are scored in code (price 40, trust 45, reachable minimum 15); the AI explains the ranking | |
 | 3. Confirm | Each resident approves **one hold for the highest price** their items could cost. Neighbours join and the price falls for everyone | The **Society Secretary** takes the authorized dollars to each supplier and asks for a lower price at that quantity | Orders v2 `intent=AUTHORIZE`, then authorize |
 | 4. Cutoff | Pools that reached their minimum succeed; each hold is charged at the final price | | Partial capture with `final_capture: true`; void when nothing succeeded |
 | 5. Delivery | The captain checks the drop. Residents report problems with a photo | The Secretary refunds plausible claims up to $10 itself; larger or doubtful ones go to the captain | Refunds |
@@ -78,16 +78,16 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settle
 
 ## AI
 
-- **Society Secretary** (`lib/ai/secretary.ts`): one Claude agent using the Anthropic SDK tool runner. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It decides every reported problem as it comes in, negotiates when the captain asks it to, and answers questions from every role.
+- **Society Secretary** (`lib/ai/secretary.ts`): one tool-calling agent (Gemini, with Groq as fallback) driven by a small OpenAI-compatible loop in `lib/ai/llm.ts`. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It decides every reported problem as it comes in, negotiates when the captain asks it to, and answers questions from every role.
 - **Basket Assistant** (photo and text lists), **Pricing Copilot** (suggested price ladders for suppliers), **bid explanations**, **issue assessment** (photo checks), and an **AG Studio analyst** that builds charts from a question.
-- Model `claude-opus-5-5` with structured outputs and server-side refusal fallbacks.
-- **Works without a key:** every agent has a rule-based fallback, so the whole week runs offline. A public demo is capped at `AI_CALLS_PER_HOUR` (default 300) Claude calls.
+- Free-tier models: Gemini `gemini-2.5-flash` first, Groq `llama-3.3-70b-versatile` (vision: `llama-4-scout`) if Gemini is rate-limited or down. Replies are JSON checked with zod; tool inputs are checked before a tool runs.
+- **Works without a key:** every agent has a rule-based fallback, so the whole week runs offline. A public demo is capped at `AI_CALLS_PER_HOUR` (default 300) AI calls.
 
 ## Sponsor tools
 
 | Tool | Use |
 |---|---|
-| **AG Grid / AG Studio** | Demand board with trust, in-cell "next price" progress and flashing price changes; ledger and AI decision grids; AG Studio analytics with a supplier-trust page and a Claude-backed analyst (`app/ops/dashboard/claude-adapter.ts`) |
+| **AG Grid / AG Studio** | Demand board with trust, in-cell "next price" progress and flashing price changes; ledger and AI decision grids; AG Studio analytics with a supplier-trust page and an AI analyst (`app/ops/dashboard/ai-adapter.ts`) |
 | **Channel3** | Identifies unfamiliar products on a resident's list. The operator's "Check with Channel3" sets each product's retail price from today's listings (lower median, outliers ignored), so "saved against retail" is measured against a real price (`lib/engine/retail.ts`) |
 | **Bryntum Scheduler** | "This week, step by step" on the resident and captain pages: when lists close, when suppliers bid, when the PayPal hold is placed and charged, the drop, the 24-hour problem window and supplier payouts (`app/_components/WeekTimelineView.tsx`, `lib/schedule.ts`) |
 | **APIMatic** | PayPal's APIMatic-generated Server SDK carries every hold, capture, void and refund (`lib/paypal/gateway.ts`); the APIMatic Context Plugin was used in Claude Code while building it |
@@ -118,7 +118,8 @@ Gulmohar Residency, Pune. **Ananya Kulkarni** is a resident and **Rohan Mehta** 
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | developer.paypal.com > Apps & Credentials > Sandbox app (enable Payouts) | Built-in PayPal stand-in with the same rules |
 | `PAYPAL_SANDBOX_PERSONAL_EMAIL` | A sandbox personal account; receives supplier payouts | Placeholder email |
 | `PAYPAL_WEBHOOK_ID` | Webhook pointing at `/api/webhooks/paypal` | Webhooks rejected |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | Rule-based fallbacks; photo reading off |
+| `GEMINI_API_KEY` | aistudio.google.com/apikey (free) | Groq is used alone |
+| `GROQ_API_KEY` | console.groq.com/keys (free) | Gemini is used alone; with neither key: rule-based fallbacks, photo reading off |
 | `CHANNEL3_API_KEY` | trychannel3.com/developers | Local catalogue only |
 | `AG_STUDIO_LICENSE` | AG Studio trial key | Trial watermark |
 | `DATABASE_URL` | Postgres URL (Render sets it) | Embedded PGlite |
@@ -134,7 +135,7 @@ npm test
 
 47 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; Channel3 retail picks; and the guided demo walking all twelve steps to a balanced ledger.
 
-`spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts, Channel3 and Claude. Run `cd spikes && npm install && npm run all`.
+`spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts and Channel3. Run `cd spikes && npm install && npm run all`.
 
 ## Deploy on Render
 

@@ -68,13 +68,13 @@ PayPal pieces: Orders v2 with `intent=AUTHORIZE`, then `POST /v2/payments/author
 
 ## The Society Secretary
 
-One Claude agent works for the building (`lib/ai/secretary.ts`). It reads state and acts only through tools, and engine code enforces every limit.
+One AI agent works for the building (`lib/ai/secretary.ts`). It reads state and acts only through tools, and engine code enforces every limit.
 
 - **Decides issues.** It reads the issue and the limits, then refunds through PayPal or escalates to the captain. A refund it issues must be $10 or less, no more than was charged for that line, one per issue, and the household must have had fewer than 3 automatic refunds in 30 days.
 - **Puts money on the table.** During Confirm and pay it tells each winning supplier how many households and dollars are already authorized and asks for a lower price at that quantity (see below).
 - **Answers questions** from residents, captains and suppliers, using tools scoped to the asker's role.
 
-It cannot capture, void or pay out. Settlement code does that at cutoff and after the issue window. Without an Anthropic key, a fixed rules playbook calls the same engine functions.
+It cannot capture, void or pay out. Settlement code does that at cutoff and after the issue window. Without a Gemini or Groq key, a fixed rules playbook calls the same engine functions.
 
 ## Supplier trust
 
@@ -100,13 +100,13 @@ Rule for every feature: AI proposes and explains; deterministic code moves money
 
 | Feature | What it does | Status |
 |---|---|---|
-| Basket Assistant | Text or photo of a list to catalog lines; Channel3 lookup for unknown items; blocks restricted goods | Built. Photos need the Claude key. |
+| Basket Assistant | Text or photo of a list to catalog lines; Channel3 lookup for unknown items; blocks restricted goods | Built. Photos need a Gemini or Groq key. |
 | Pool Builder | One-sentence seller note per pool; merge ideas as text only | Built |
 | Pricing Copilot | Suggests MOQ, capacity and tiers for a supplier, validated by code | Built |
 | Bid Analyst | Explains code-computed scores and flags (at or above retail, more than 40% below retail, MOQ well above demand) | Built |
 | Issue Resolver | Classifies a complaint (with photo) and proposes `affected packs x price paid` | Built |
 | Society Secretary | Tool-using agent described above | Built |
-| AG Studio analyst | Answers questions in the operator dashboard and builds charts | Built. Needs the Claude key. |
+| AG Studio analyst | Answers questions in the operator dashboard and builds charts | Built. Needs a Gemini or Groq key. |
 | Momentum Nudger | Opt-in nudges near a price break | Not built |
 | Restock Autopilot | Recurring basket within a resident mandate | Not built |
 

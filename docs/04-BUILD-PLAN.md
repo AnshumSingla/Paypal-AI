@@ -10,7 +10,7 @@ Hackathon deadline: Thu Nov 12 2026, 12:00 PT. This page lists what is built, wh
 | Resident | Typed or photographed list, basket editing, one PayPal hold (PayPalButtons or sandbox test card), withdraw, receipt with "Check this with PayPal", issue reports |
 | Captain | Demand board (AG Grid), ranked bids with trust, auto-select, money on the table, drop check and packing list, escalated issues |
 | Supplier | Pooled demand, bid builder with AI tier suggestions, won pools, payouts with status refresh and retry, plan upgrade with PayPal Subscriptions |
-| Operator | Revenue, fees, payables, ledger balance, ledger and AI log grids, supplier approval and trust, webhooks, AG Studio dashboard with a Claude-backed analyst |
+| Operator | Revenue, fees, payables, ledger balance, ledger and AI log grids, supplier approval and trust, webhooks, AG Studio dashboard with an AI analyst |
 | Society Secretary | Tool-using agent for issues, funded price asks and questions, with a rules playbook |
 | Trust ledger | `trust_event` table, supplier score used in bid ranking, resident reliability events recorded |
 | PayPal | Authorize, partial final capture, void, partial refund, Payouts, Subscriptions, webhook verification; in-process mock with restart recovery |
@@ -47,7 +47,7 @@ Hackathon deadline: Thu Nov 12 2026, 12:00 PT. This page lists what is built, wh
 | `restart.test.ts` | Mock PayPal rebuilt from the database so cutoff still captures after a restart |
 | `tour.test.ts` | Every guided step in order, ending with a closed, balanced week |
 
-`spikes/` holds standalone scripts that exercised the real sandbox before the app was built: hold, partial capture and refund; void; card decline; wallet hold; payout; Channel3; Claude.
+`spikes/` holds standalone scripts that exercised the real sandbox before the app was built: hold, partial capture and refund; void; card decline; wallet hold; payout; Channel3.
 
 ## Guided demo
 
