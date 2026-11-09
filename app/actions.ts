@@ -19,6 +19,8 @@ import { suggestTiers } from "@/lib/ai/agents/sellerSide";
 import { log } from "@/lib/engine/ledger";
 import { activateSubscription } from "@/lib/paypal/subscriptions";
 import { runSecretary } from "@/lib/ai/secretary";
+import { PERSONAS } from "@/lib/db/seed";
+import { performTourStep, tourStep } from "@/lib/engine/tour";
 
 export type ActionResult<T = undefined> = { ok: true; message?: string; data?: T } | { ok: false; error: string };
 
@@ -71,6 +73,34 @@ export async function simulateBidsAction(cycleId: string) {
     if (!demoMode()) throw new PolicyError("Demo tools are off.");
     const { db } = await getSession();
     return { message: `${await simulateCompetingBids(db, cycleId)} competing bids placed by other sellers.` };
+  });
+}
+
+// ---------------------------------------------------------------- guided demo
+async function openPersona(as: keyof typeof PERSONAS) {
+  (await cookies()).set(SESSION_COOKIE, PERSONAS[as], { httpOnly: true, sameSite: "lax", path: "/" });
+  return homeFor(as);
+}
+
+/** Run the guided demo's current step, then switch to the person whose view shows the next one. */
+export async function tourNextAction(cycleId: string) {
+  return guard<{ href: string }>(async () => {
+    if (!demoMode()) throw new PolicyError("The guided demo is off.");
+    const { db, user } = await getSession();
+    const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    if (!c) throw new PolicyError("Cycle not found.");
+    const message = await performTourStep(db, c, user?.name ?? "Guided demo");
+    const [after] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
+    const next = await tourStep(db, after);
+    return { message, data: { href: await openPersona(next.as) } };
+  });
+}
+
+/** Open the view where the guided demo's current step happens. */
+export async function tourJumpAction(as: keyof typeof PERSONAS) {
+  return guard<{ href: string }>(async () => {
+    if (!demoMode()) throw new PolicyError("The guided demo is off.");
+    return { data: { href: await openPersona(as) } };
   });
 }
 

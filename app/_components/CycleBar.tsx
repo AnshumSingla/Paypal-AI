@@ -4,6 +4,7 @@ import { PHASE_LABEL, PHASES } from "@/lib/engine/cycle";
 import { demoMode } from "@/lib/engine/demo";
 import { advancePhase, nextCycleAction, resetDemoAction, simulateBidsAction, simulateNeighboursAction } from "@/app/actions";
 import { ActionButton } from "./ActionButton";
+import { TourBar } from "./TourBar";
 
 const NEXT_LABEL: Record<string, string> = {
   COLLECT: "Close collection and open bidding",
@@ -17,6 +18,7 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
   const idx = PHASES.indexOf(cycle.phase);
   return (
     <section className="card mb-6 overflow-hidden">
+      {demoMode() && <TourBar cycle={cycle} />}
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
         <div>
           <div className="label">{societyName}</div>
