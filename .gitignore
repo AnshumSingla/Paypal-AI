@@ -16,3 +16,7 @@ next-env.d.ts
 
 # brag video intermediates (frames, browser profile)
 brag-output/work/
+
+# Written by `next dev` for coding agents
+AGENTS.md
+CLAUDE.md
