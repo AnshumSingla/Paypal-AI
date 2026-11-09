@@ -1,4 +1,5 @@
 "use client"; // Error boundaries must be Client Components
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function Error({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
@@ -13,9 +14,9 @@ export default function Error({ error, retry }: { error: Error & { digest?: stri
         <button className="btn btn-primary" onClick={() => retry()}>
           Try again
         </button>
-        <a className="btn btn-ghost" href="/">
+        <Link className="btn btn-ghost" href="/">
           Back to the start
-        </a>
+        </Link>
       </div>
     </div>
   );

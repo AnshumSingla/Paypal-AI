@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   if (payMode() !== "sandbox") return new Response("PayPal not configured", { status: 400 });
   const ok = await gateway().verifyWebhook(request.headers, raw).catch(() => false);
   if (!ok) return new Response("invalid signature", { status: 400 });
-  const event = JSON.parse(raw) as { id: string; event_type: string; resource?: any };
+  const event = JSON.parse(raw) as { id: string; event_type: string; resource?: Record<string, any> }; // eslint-disable-line @typescript-eslint/no-explicit-any -- PayPal event payloads vary by type
   const db = await getDb();
   const inserted = await db.insert(s.webhookEvent).values({ paypalEventId: event.id, type: event.event_type, payload: event }).onConflictDoNothing().returning();
   if (!inserted.length) return new Response("duplicate", { status: 200 });

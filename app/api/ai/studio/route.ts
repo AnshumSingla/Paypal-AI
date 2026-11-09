@@ -96,7 +96,8 @@ export async function POST(request: Request) {
   } catch (e) {
     if (json && e instanceof Anthropic.BadRequestError) {
       // Schema not supported by structured outputs: fall back to an instruction.
-      const { format: _f, ...rest } = params.output_config;
+      const rest = { ...params.output_config };
+      delete rest.format;
       res = await client.beta.messages.create({ ...params, output_config: rest, system: `${params.system}\nReply with only JSON matching this schema:\n${JSON.stringify(json.schema)}` }, { signal: request.signal });
     } else {
       const message = e instanceof Error ? e.message : String(e);

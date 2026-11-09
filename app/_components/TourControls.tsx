@@ -15,7 +15,7 @@ export function TourControls({ cycleId, action, jumpTo, jumpLabel }: { cycleId: 
       const carried = sessionStorage.getItem("tour-msg");
       if (carried) {
         sessionStorage.removeItem("tour-msg");
-        setMsg({ ok: true, text: carried });
+        setMsg({ ok: true, text: carried }); // eslint-disable-line react-hooks/set-state-in-effect -- sessionStorage exists only after mount
       }
     } catch {}
   }, []);

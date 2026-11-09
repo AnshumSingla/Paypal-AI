@@ -4,6 +4,7 @@ export const channel3Enabled = () => Boolean(process.env.CHANNEL3_API_KEY);
 
 export type C3Product = { id: string; title: string; brand: string | null; priceCents: number | null; imageUrl: string | null; url: string | null };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Channel3 result shapes vary; every field is checked
 const pickPrice = (p: any): number | null => {
   const candidates = [p?.price?.price, p?.price?.amount, p?.price?.value, typeof p?.price === "number" ? p.price : undefined, p?.offers?.[0]?.price?.price, p?.offers?.[0]?.price?.amount, p?.offers?.[0]?.price];
   for (const c of candidates) {
@@ -23,6 +24,7 @@ export async function channel3Search(query: string, limit = 5): Promise<C3Produc
   });
   if (!res.ok) throw new Error(`Channel3 ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const body = await res.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- as above
   const items: any[] = Array.isArray(body) ? body : (body.products ?? body.results ?? body.data ?? []);
   return items.map((p) => ({
     id: String(p.id ?? p.product_id ?? p.url ?? p.title),

@@ -78,7 +78,7 @@ export default async function OpsPage() {
           <div>
             <h2 className="text-lg font-semibold">Retail prices</h2>
             <p className="text-sm text-muted">
-              Residents' savings are measured against retail. {retail.live} of {retail.all} products use today's price from Channel3; the rest use the catalog price.
+              Residents&apos; savings are measured against retail. {retail.live} of {retail.all} products use today&apos;s price from Channel3; the rest use the catalog price.
             </p>
           </div>
           {channel3Enabled() ? (

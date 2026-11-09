@@ -64,6 +64,7 @@ async function accessToken(): Promise<string> {
   return token.value;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped REST JSON (Payouts, webhooks, subscriptions)
 async function call<T = any>(method: "GET" | "POST", path: string, body?: unknown, requestId?: string): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     const headers: Record<string, string> = {

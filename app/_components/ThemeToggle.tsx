@@ -12,7 +12,7 @@ export function ThemeToggle() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme");
-      if (saved === "light" || saved === "dark") setTheme(saved);
+      if (saved === "light" || saved === "dark") setTheme(saved); // eslint-disable-line react-hooks/set-state-in-effect -- localStorage exists only after mount
     } catch {}
   }, []);
   const pick = (t: Theme) => {
