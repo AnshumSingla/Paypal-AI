@@ -175,7 +175,10 @@ export default async function ResidentPage() {
                   {held ? (
                     <div className="space-y-2">
                       <p className="flex items-start gap-2 rounded-xl bg-brand-soft p-3 text-brand-dark">
-                        <ShieldCheck size={18} className="mt-0.5 shrink-0" aria-hidden /> Hold of <span className="num font-semibold">{fmt(basket.basket.ceilingCents)}</span> placed. You&apos;re charged the final price at cutoff.
+                        <ShieldCheck size={18} className="mt-0.5 shrink-0" aria-hidden />
+                        <span>
+                          Hold of <span className="num font-semibold">{fmt(basket.basket.ceilingCents)}</span> placed. You&apos;re charged the final price at cutoff.
+                        </span>
                       </p>
                       <ActionButton action={withdrawAction.bind(null, cycle.id)} className="btn btn-danger w-full" confirm="Withdraw and void your PayPal hold?">
                         Withdraw and release my hold
