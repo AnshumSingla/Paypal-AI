@@ -4,7 +4,12 @@
 
 [![Collective launch video](brag-output/brag.jpg)](brag-output/brag.mp4)
 
-*Approved $3.91 a pack. Paid $3.43. The rest of the hold went back.* (24-second launch video above.)
+*Approved $3.91 a pack. Paid $3.43. The rest of the hold went back.* 24-second launch video above; the [2-minute demo](brag-output/demo.mp4) walks the whole guided tour in the real app.
+
+| | |
+|---|---|
+| ![Landing page](docs/screenshots/landing.jpg) | ![Guided tour with choices](docs/screenshots/tour-choices.jpg) |
+| ![The captain decides a claim over the Secretary's limit](docs/screenshots/captain-decides.jpg) | ![Analytics in AG Studio](docs/screenshots/analytics.jpg) |
 
 Built for the PayPal AI Hackathon. PayPal sandbox only: no real money moves.
 
@@ -103,7 +108,7 @@ cp .env.example .env.local   # optional: add keys (see below)
 npm run dev
 ```
 
-Open http://localhost:3000 and pick who to view as. A **guided demo** bar at the top walks the whole week with one button per step: Ananya's list, supplier bids, her PayPal hold, neighbours joining, the Secretary negotiating, cutoff, a refund, and supplier payouts. **Reset** returns to the start of Week 46, with three settled past weeks already in place.
+Open http://localhost:3000 and press **Take the guided tour**. The page dims except the part each step is about, and a card explains it, says what could go wrong, and runs the step for real: Ananya's list (with a beer the app blocks), supplier bids, her PayPal hold, neighbours joining, the Secretary negotiating, cutoff, a problem, and supplier payouts. At the edge cases you choose what happens: a neighbour's card is declined or Ananya withdraws (her hold is voided); a missing pack the Secretary refunds itself or a bigger claim the captain approves or rejects. **Start over** returns to Week 46 with six settled weeks behind it. Light (cream) and dark (true black) themes follow your system or the toggle in the header.
 
 To start over from the command line, stop the dev server and run `npm run db:reset`.
 
@@ -133,7 +138,7 @@ With sandbox keys, residents approve in the real PayPal popup with a sandbox per
 npm test
 ```
 
-47 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; Channel3 retail picks; and the guided demo walking all twelve steps to a balanced ledger.
+54 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; Channel3 retail picks; the guided tour walking all twelve steps, and its alternative path (withdraw, then a claim the captain rejects), to a balanced ledger; and the Gemini-to-Groq fallback and tool-input validation with the network mocked.
 
 `spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts and Channel3. Run `cd spikes && npm install && npm run all`.
 
