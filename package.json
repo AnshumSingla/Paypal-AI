@@ -15,7 +15,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.5.0",
     "@bryntum/scheduler": "npm:@bryntum/scheduler-trial@^7.3.8",
     "@electric-sql/pglite": "^0.5.15",
     "@paypal/paypal-server-sdk": "^2.5.0",

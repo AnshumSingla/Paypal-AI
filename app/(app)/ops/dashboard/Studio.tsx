@@ -4,7 +4,7 @@ import { AgStudioAiModule, type AgAiHarnessSetup, createAiHarness } from "ag-stu
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { buildStudioData, defaultReport, poolcartStudioTheme } from "./studio-config";
-import { claudeAdapter } from "./ai-adapter";
+import { aiAdapter } from "./ai-adapter";
 
 const noSub = () => () => {};
 
@@ -16,7 +16,7 @@ export function Studio({ data, licenseKey, aiEnabled }: { data: DashboardData; l
       aiEnabled
         ? ({ api }) =>
             createAiHarness(api, {
-              adapter: claudeAdapter({ endpoint: "/api/ai/studio" }),
+              adapter: aiAdapter({ endpoint: "/api/ai/studio" }),
               promptStarters: [
                 { label: "Where did residents save most?", prompt: "Which products saved residents the most money vs retail, and by what percentage?" },
                 { label: "Why did pools fail?", prompt: "Which pools failed or got no bid, and what do they have in common?" },

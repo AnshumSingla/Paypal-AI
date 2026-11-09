@@ -6,7 +6,7 @@ import type { DB } from "../db";
 import * as s from "../db/schema";
 import { newId } from "../util/ids";
 import { fmt } from "../util/money";
-import { runAgent, structured } from "../ai/claude";
+import { llmJSON, runAgent } from "../ai/llm";
 import { analyzeBids } from "../ai/agents/sellerSide";
 import { COMMISSION_BPS, ceilingUnit, PolicyError, validateTiers } from "./pricing";
 import { log } from "./ledger";
@@ -115,11 +115,10 @@ export async function buildPools(db: DB, cycleId: string): Promise<string> {
     "pool_builder",
     `cycle:${cycleId}`,
     () =>
-      structured({
+      llmJSON({
         system: `You are Collective's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
-        content: rows.map((r) => `${r.productId}: ${r.title}${r.brand ? ` (${r.brand})` : ""} ${r.packSize}: ${r.qty} packs from ${r.households} households, ${r.flexible} packs brand-flexible`).join("\n"),
+        prompt: rows.map((r) => `${r.productId}: ${r.title}${r.brand ? ` (${r.brand})` : ""} ${r.packSize}: ${r.qty} packs from ${r.households} households, ${r.flexible} packs brand-flexible`).join("\n"),
         schema: Brief,
-        effort: "low",
       }),
     () => ({ pools: rows.map((r) => ({ productId: r.productId!, note: `${r.households} households want ${r.qty} packs; ${r.flexible} are brand-flexible.` })), mergeSuggestions: [] }),
   );

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { getSession } from "@/lib/session";
 import { dashboardData } from "@/lib/dashboard-data";
-import { aiEnabled } from "@/lib/ai/claude";
+import { aiEnabled } from "@/lib/ai/llm";
 import { ChartColumn } from "lucide-react";
 import { IconChip } from "@/app/_components/ui";
 import { Studio } from "./Studio";

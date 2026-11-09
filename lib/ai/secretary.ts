@@ -2,17 +2,14 @@
 // It reads state and acts only through the tools below. Each tool is a thin wrapper over engine
 // code, and the engine enforces every limit (refunds, tier rules, phase). Captures, voids and
 // payouts are not tools: the settlement engine does them at cutoff and after the issue window.
-// With no ANTHROPIC_API_KEY a fixed playbook calls the same functions, so behaviour is the same
+// With no GEMINI_API_KEY or GROQ_API_KEY a fixed playbook calls the same functions, so behaviour is the same
 // policy, just without judgement.
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
-import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableTool";
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { DB } from "../db";
 import * as s from "../db/schema";
 import { fmt } from "../util/money";
-import { aiModel, asData, runAgent } from "./claude";
+import { aiModel, asData, llmToolLoop, runAgent, tool, type LlmTool } from "./llm";
 import { log } from "../engine/ledger";
 import { nextTier, unitPriceAt } from "../engine/pricing";
 import { agentRefund, issueForAgent } from "../engine/refunds";
@@ -89,19 +86,19 @@ async function escalate(db: DB, cycleId: string, message: string) {
 // ------------------------------------------------------------------ AI mode
 function tools(db: DB, cycleId: string, role: Role, ctx: { householdId?: string; sellerId?: string }, actions: string[], money: { refunded: number }) {
   const json = (v: unknown) => JSON.stringify(v);
-  const all: BetaRunnableTool[] = [
-    betaZodTool({ name: "get_status", description: "This week's pools: supplier and trust, funded holds, price now, next price break, retail reference.", inputSchema: z.object({}), run: async () => json(await status(db, cycleId)) }),
+  const all: LlmTool[] = [
+    tool({ name: "get_status", description: "This week's pools: supplier and trust, funded holds, price now, next price break, retail reference.", schema: z.object({}), run: async () => json(await status(db, cycleId)) }),
   ];
-  if (role === "resident" && ctx.householdId) all.push(betaZodTool({ name: "get_my_basket", description: "The asking resident's own basket: hold, charge, refunds, lines.", inputSchema: z.object({}), run: async () => json(await myBasket(db, cycleId, ctx.householdId!)) }));
-  if (role === "seller" && ctx.sellerId) all.push(betaZodTool({ name: "get_my_record", description: "The asking supplier's own trust score and verified record.", inputSchema: z.object({}), run: async () => json(await supplierRecord(db, ctx.sellerId!)) }));
+  if (role === "resident" && ctx.householdId) all.push(tool({ name: "get_my_basket", description: "The asking resident's own basket: hold, charge, refunds, lines.", schema: z.object({}), run: async () => json(await myBasket(db, cycleId, ctx.householdId!)) }));
+  if (role === "seller" && ctx.sellerId) all.push(tool({ name: "get_my_record", description: "The asking supplier's own trust score and verified record.", schema: z.object({}), run: async () => json(await supplierRecord(db, ctx.sellerId!)) }));
   if (role === "system" || role === "captain") {
     all.push(
-      betaZodTool({ name: "get_supplier_record", description: "A supplier's trust score (0-100) and verified record: lines delivered, issues upheld.", inputSchema: z.object({ sellerId: z.string() }), run: async ({ sellerId }) => json(await supplierRecord(db, sellerId)) }),
-      betaZodTool({ name: "get_issue", description: "A reported delivery issue with the Issue Resolver's assessment and the refund limits that apply.", inputSchema: z.object({ issueId: z.string() }), run: async ({ issueId }) => json(await issueView(db, issueId)) }),
-      betaZodTool({
+      tool({ name: "get_supplier_record", description: "A supplier's trust score (0-100) and verified record: lines delivered, issues upheld.", schema: z.object({ sellerId: z.string() }), run: async ({ sellerId }) => json(await supplierRecord(db, sellerId)) }),
+      tool({ name: "get_issue", description: "A reported delivery issue with the Issue Resolver's assessment and the refund limits that apply.", schema: z.object({ issueId: z.string() }), run: async ({ issueId }) => json(await issueView(db, issueId)) }),
+      tool({
         name: "issue_refund",
         description: "Refund a resident through PayPal for a reported issue. Code refuses anything over $10, over what was charged for the item, or a second refund for the same issue.",
-        inputSchema: z.object({ issueId: z.string(), amountCents: z.number().int(), reason: z.string().describe("One sentence the resident and supplier will see") }),
+        schema: z.object({ issueId: z.string(), amountCents: z.number().int(), reason: z.string().describe("One sentence the resident and supplier will see") }),
         run: async ({ issueId, amountCents, reason }) => {
           const r = await agentRefund(db, issueId, amountCents, `${SECRETARY} (AI, within policy)`);
           if (!r.ok) return `Refused by policy: ${r.reason}`;
@@ -111,20 +108,20 @@ function tools(db: DB, cycleId: string, role: Role, ctx: { householdId?: string;
           return `Refunded ${fmt(amountCents)} through PayPal.`;
         },
       }),
-      betaZodTool({
+      tool({
         name: "escalate_to_captain",
         description: "Hand a decision to the society captain with a short reason (large or doubtful refunds, anything outside policy).",
-        inputSchema: z.object({ message: z.string() }),
+        schema: z.object({ message: z.string() }),
         run: async ({ message }) => {
           await escalate(db, cycleId, message);
           actions.push(`Escalated: ${message}`);
           return "The captain has been asked to decide.";
         },
       }),
-      betaZodTool({
+      tool({
         name: "request_better_price",
         description: "During Confirm & pay, tell a pool's winning supplier how many households and dollars are already authorized in PayPal and ask for a lower price at that quantity. The supplier answers by its own pricing rules; prices can only go down.",
-        inputSchema: z.object({ poolId: z.string() }),
+        schema: z.object({ poolId: z.string() }),
         run: async ({ poolId }) => {
           const r = await fundedAsk(db, poolId, SECRETARY);
           actions.push(r.message);
@@ -149,24 +146,17 @@ function taskText(t: Task) {
   return `Their question:\n${asData("question", t.question)}`;
 }
 
-async function runWithClaude(db: DB, cycleId: string, role: Role, task: Task, ctx: { householdId?: string; sellerId?: string }): Promise<{ data: SecretaryResult; model: string }> {
+async function runWithAi(db: DB, cycleId: string, role: Role, task: Task, ctx: { householdId?: string; sellerId?: string }): Promise<{ data: SecretaryResult; model: string }> {
   const actions: string[] = [];
   const money = { refunded: 0 };
   try {
-    const final = await new Anthropic().beta.messages.toolRunner({
-      model: aiModel(),
-      max_tokens: 16000,
-      max_iterations: 8,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: task.kind === "ask" ? "medium" : "low" },
+    const final = await llmToolLoop({
+      maxIterations: 8,
       system: SYSTEM,
       tools: tools(db, cycleId, role, ctx, actions, money),
       messages: [{ role: "user", content: `You are talking to: ${role === "system" ? "the platform (an event happened)" : `the ${role}`}.\n${taskText(task)}` }],
     });
-    if (final.stop_reason === "refusal") throw new Error("Claude declined");
-    const reply = final.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
-    return { data: { reply: reply || actions.join(" ") || "Done.", actions, refunded: money.refunded }, model: final.model };
+    return { data: { reply: final.text || actions.join(" ") || "Done.", actions, refunded: money.refunded }, model: final.model };
   } catch (e) {
     // Once a tool has moved money or asked a supplier, don't let the rules fallback do it again.
     if (actions.length) return { data: { reply: actions.join(" "), actions, refunded: money.refunded }, model: aiModel() };
@@ -214,7 +204,7 @@ async function runPlaybook(db: DB, cycleId: string, role: Role, task: Task, ctx:
 // ------------------------------------------------------------------ entry points
 export async function runSecretary(db: DB, a: { cycleId: string; role: Role; task: Task; householdId?: string; sellerId?: string }): Promise<SecretaryResult & { source: "ai" | "rules" }> {
   const ref = a.task.kind === "issue" ? `issue:${a.task.issueId}` : `${a.task.kind}:${a.cycleId}:${a.role}`;
-  const r = await runAgent(db, "society_secretary", ref, () => runWithClaude(db, a.cycleId, a.role, a.task, a), () => runPlaybook(db, a.cycleId, a.role, a.task, a));
+  const r = await runAgent(db, "society_secretary", ref, () => runWithAi(db, a.cycleId, a.role, a.task, a), () => runPlaybook(db, a.cycleId, a.role, a.task, a));
   return { ...r.data, source: r.source };
 }
 

@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/session";
 import * as s from "@/lib/db/schema";
 import { payMode } from "@/lib/paypal/gateway";
-import { aiEnabled, aiModel } from "@/lib/ai/claude";
+import { aiEnabled, aiModel } from "@/lib/ai/llm";
 import { channel3Enabled } from "@/lib/channel3";
 import { PersonaMenu } from "./PersonaMenu";
 import { ThemeToggle } from "./ThemeToggle";
@@ -46,13 +46,13 @@ export async function Header() {
             <span className={`chip ${mode === "sandbox" ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={mode === "sandbox" ? "Real PayPal sandbox API calls" : "No PayPal keys set: an in-process mock with the same rules"}>
               PayPal {mode === "sandbox" ? "sandbox" : "mock"}
             </span>
-            <span className={`chip ${aiEnabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={aiEnabled() ? aiModel() : "No Claude key: rule-based fallbacks"}>
-              AI {aiEnabled() ? "Claude" : "rules"}
+            <span className={`chip ${aiEnabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={aiEnabled() ? aiModel() : "No Gemini or Groq key: rule-based fallbacks"}>
+              AI {aiEnabled() ? "on" : "rules"}
             </span>
             <span className={`chip ${channel3Enabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`}>Channel3 {channel3Enabled() ? "on" : "off"}</span>
             </div>
           ) : (
-            <span className="chip hidden bg-brand-soft text-brand-dark sm:inline-flex" title={`PayPal ${mode === "sandbox" ? "sandbox" : "stand-in"}, AI ${aiEnabled() ? "Claude" : "rules"}. No real money moves.`}>
+            <span className="chip hidden bg-brand-soft text-brand-dark sm:inline-flex" title={`PayPal ${mode === "sandbox" ? "sandbox" : "stand-in"}, AI ${aiEnabled() ? "on" : "rules"}. No real money moves.`}>
               {mode === "sandbox" ? "PayPal sandbox" : "Demo mode"}
             </span>
           )}

@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm";
 
 process.env.PAYPAL_CLIENT_ID = "";
 process.env.PAYPAL_CLIENT_SECRET = "";
-process.env.ANTHROPIC_API_KEY = "";
+process.env.GEMINI_API_KEY = "";
+process.env.GROQ_API_KEY = "";
 process.env.CHANNEL3_API_KEY = "";
 
 import { memoryDb, type DB } from "../lib/db";

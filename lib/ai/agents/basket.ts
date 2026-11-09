@@ -3,7 +3,7 @@
 import { z } from "zod";
 import type { DB } from "../../db";
 import { product } from "../../db/schema";
-import { asData, imageBlock, runAgent, structured } from "../claude";
+import { asData, llmJSON, runAgent } from "../llm";
 import { channel3Enabled, channel3Search } from "../../channel3";
 import { newId } from "../../util/ids";
 import { searchTextFor } from "../../db/seed";
@@ -89,15 +89,13 @@ Rules:
 - If the size is vague ("big bottle"), still match the closest catalog pack and ask a short clarification only if it really matters.
 - restricted=true for alcohol, tobacco/vapes, medicines/supplements and age-restricted goods (Collective can't sell these).`;
 
-  const content = input.imageDataUrl
-    ? [imageBlock(input.imageDataUrl), { type: "text" as const, text: "Photo of my grocery list for this week." + (input.text ? `\n${asData("note", input.text)}` : "") }]
-    : asData("grocery_list", input.text ?? "");
+  const prompt = input.imageDataUrl ? "Photo of my grocery list for this week." + (input.text ? `\n${asData("note", input.text)}` : "") : asData("grocery_list", input.text ?? "");
 
   const result = await runAgent(
     db,
     "basket_assistant",
     `household:${input.householdId}`,
-    () => structured({ system, content, schema: Parsed, effort: "low" }),
+    () => llmJSON({ system, prompt, images: input.imageDataUrl ? [input.imageDataUrl] : undefined, schema: Parsed }),
     () => {
       if (!input.text) return { lines: [] }; // a photo can't be read without the AI
       return ruleParse(input.text, catalog);

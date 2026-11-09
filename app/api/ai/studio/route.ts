@@ -1,29 +1,26 @@
-// AG Studio Insights agent (A7) backend: translates one AG Studio LLM turn (AgLlmRequest) into a
-// Claude Messages call and back. The API key stays on the server. Studio's own agents and tools
-// (build widgets, query data) run in the browser; this route only does the model call.
-import Anthropic from "@anthropic-ai/sdk";
+// AG Studio Insights agent (A7) backend: translates one AG Studio LLM turn (AgLlmRequest) into an
+// OpenAI-style chat call (Gemini, then Groq) and back. The API keys stay on the server. Studio's own
+// agents and tools (build widgets, query data) run in the browser; this route only does the model call.
 import type { AgLlmRequest } from "ag-studio";
-import { aiEnabled, aiModel, spendAiCall } from "@/lib/ai/claude";
+import { aiEnabled, clean, llmChat, spendAiCall, type ChatMessage, type ChatPart, type ChatRequest } from "@/lib/ai/llm";
 import { getSession } from "@/lib/session";
-
-type Block = Anthropic.Beta.Messages.BetaContentBlockParam;
-type Msg = { role: "user" | "assistant"; content: Block[] };
-
-// Claude's thinking blocks must be sent back unchanged with the tool calls they preceded. Studio's
-// history doesn't keep them, so we remember each assistant turn's exact content by tool-call id.
-const g = globalThis as unknown as { __studioTurns?: Map<string, Block[]> };
-const turns = (g.__studioTurns ??= new Map());
-
-let client: Anthropic | null = null;
 
 function toMessages(req: AgLlmRequest) {
   const system: string[] = [];
   if (req.instructions) system.push(req.instructions);
-  const msgs: Msg[] = [];
-  const push = (role: Msg["role"], block: Block) => {
+  const msgs: ChatMessage[] = [];
+  const user = (part: ChatPart) => {
     const last = msgs.at(-1);
-    if (last && last.role === role) last.content.push(block);
-    else msgs.push({ role, content: [block] });
+    if (last?.role === "user" && Array.isArray(last.content)) last.content.push(part);
+    else msgs.push({ role: "user", content: [part] });
+  };
+  // Text and tool calls from one assistant turn go in one assistant message.
+  const assistant = () => {
+    const last = msgs.at(-1);
+    if (last?.role === "assistant") return last;
+    const m: Extract<ChatMessage, { role: "assistant" }> = { role: "assistant", content: null };
+    msgs.push(m);
+    return m;
   };
   for (const item of req.input) {
     if (item.type === "message" && item.kind === "input") {
@@ -32,34 +29,23 @@ function toMessages(req: AgLlmRequest) {
         continue;
       }
       for (const c of item.content) {
-        if (c.type === "text") push("user", { type: "text", text: c.text });
-        else if (c.type === "image" && c.imageUrl?.startsWith("data:")) {
-          const m = /^data:(image\/[a-z]+);base64,(.+)$/.exec(c.imageUrl);
-          if (m) push("user", { type: "image", source: { type: "base64", media_type: m[1] as "image/png", data: m[2] } });
-        }
+        if (c.type === "text") user({ type: "text", text: c.text });
+        else if (c.type === "image" && c.imageUrl?.startsWith("data:image/")) user({ type: "image_url", image_url: { url: c.imageUrl } });
       }
     } else if (item.type === "message") {
       const text = item.content.map((c) => (c.type === "text" ? c.text : c.refusal)).join("");
-      if (text) push("assistant", { type: "text", text });
-    } else if (item.type === "function_call") {
-      const stash = turns.get(item.callId);
-      const last = msgs.at(-1);
-      if (stash && !(last?.role === "assistant" && last.content.some((b) => b.type === "tool_use" && b.id === item.callId))) {
-        // Replace whatever we rebuilt for this assistant turn with the exact original content.
-        if (last?.role === "assistant") msgs.pop();
-        msgs.push({ role: "assistant", content: [...stash] });
-      } else if (!stash) {
-        let input: unknown = {};
-        try {
-          input = JSON.parse(item.arguments || "{}");
-        } catch {}
-        push("assistant", { type: "tool_use", id: item.callId, name: item.name, input });
+      if (text) {
+        const m = assistant();
+        m.content = (m.content ?? "") + text;
       }
+    } else if (item.type === "function_call") {
+      const m = assistant();
+      (m.tool_calls ??= []).push({ id: item.callId, type: "function", function: { name: item.name, arguments: item.arguments || "{}" } });
     } else if (item.type === "function_call_output") {
-      push("user", { type: "tool_result", tool_use_id: item.callId, content: item.output });
+      msgs.push({ role: "tool", tool_call_id: item.callId, content: item.output });
     }
   }
-  if (!msgs.length || msgs[0].role !== "user") msgs.unshift({ role: "user", content: [{ type: "text", text: "(continue)" }] });
+  if (!msgs.length || msgs[0].role !== "user") msgs.unshift({ role: "user", content: "(continue)" });
   return { system: system.join("\n\n"), messages: msgs };
 }
 
@@ -70,55 +56,33 @@ export async function POST(request: Request) {
   spendAiCall();
   const req = (await request.json()) as AgLlmRequest;
   const { system, messages } = toMessages(req);
-  const tools = (req.tools ?? [])
-    .filter((t) => !t.kind || t.kind === "client")
-    .map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters as Anthropic.Beta.Messages.BetaTool.InputSchema }));
-  // Claude Opus 5.5 does not accept forced tool choice: steer with an instruction instead.
-  let steer = "";
-  if (req.toolChoice === "required") steer = "\nYou must call one of the provided tools in this turn.";
-  else if (typeof req.toolChoice === "object") steer = `\nYou must call the tool "${req.toolChoice.name}" in this turn.`;
+  const tools = (req.tools ?? []).filter((t) => !t.kind || t.kind === "client").map((t) => ({ type: "function" as const, function: { name: t.name, description: t.description, parameters: clean(t.parameters) } }));
   const json = req.responseFormat?.type === "json" ? req.responseFormat : null;
+  const toolChoice: ChatRequest["tool_choice"] = typeof req.toolChoice === "object" ? { type: "function", function: { name: req.toolChoice.name } } : (req.toolChoice ?? "auto");
 
-  client ??= new Anthropic();
-  const params = {
-    model: aiModel(),
-    max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default" as const,
-    system: `${system}${steer}\nYou are the analyst inside Collective's operations dashboard (AG Studio). Collective runs bulk grocery buying for an Indian housing society; data is PayPal sandbox data; amounts are USD.`,
-    messages: messages as Anthropic.Beta.Messages.BetaMessageParam[],
-    ...(tools.length ? { tools, tool_choice: req.toolChoice === "none" ? { type: "none" as const } : { type: "auto" as const } } : {}),
-    output_config: { effort: "medium" as const, ...(json ? { format: { type: "json_schema" as const, schema: json.schema as Record<string, unknown> } } : {}) },
+  const body: ChatRequest = {
+    messages: [
+      { role: "system", content: `${system}\nYou are the analyst inside Collective's operations dashboard (AG Studio). Collective runs bulk grocery buying for an Indian housing society; data is PayPal sandbox data; amounts are USD.${json ? `\nReply with only a JSON object matching this schema:\n${JSON.stringify(json.schema)}` : ""}` },
+      ...messages,
+    ],
+    ...(tools.length ? { tools, tool_choice: toolChoice } : {}),
+    // JSON mode can't be combined with tools on Gemini or Groq; with tools the instruction above steers.
+    ...(json && !tools.length ? { response_format: { type: "json_object" as const } } : {}),
   };
-  let res: Anthropic.Beta.Messages.BetaMessage;
   try {
-    res = await client.beta.messages.create(params, { signal: request.signal });
+    const res = await llmChat(body, { signal: request.signal });
+    const toolCalls = res.message.tool_calls ?? [];
+    return Response.json({
+      id: res.id,
+      model: res.model,
+      stopReason: res.finishReason,
+      refusal: null,
+      text: res.message.content ?? "",
+      toolCalls: toolCalls.map((t) => ({ callId: t.id, name: t.function.name, arguments: t.function.arguments })),
+      usage: res.usage,
+    });
   } catch (e) {
-    if (json && e instanceof Anthropic.BadRequestError) {
-      // Schema not supported by structured outputs: fall back to an instruction.
-      const rest = { ...params.output_config };
-      delete rest.format;
-      res = await client.beta.messages.create({ ...params, output_config: rest, system: `${params.system}\nReply with only JSON matching this schema:\n${JSON.stringify(json.schema)}` }, { signal: request.signal });
-    } else {
-      const message = e instanceof Error ? e.message : String(e);
-      return Response.json({ error: { code: "anthropic_error", message } }, { status: 502 });
-    }
+    const message = e instanceof Error ? e.message : String(e);
+    return Response.json({ error: { code: "ai_error", message } }, { status: 502 });
   }
-
-  const toolUses = res.content.filter((b) => b.type === "tool_use");
-  if (toolUses.length) {
-    const stash = res.content.filter((b) => b.type !== "fallback") as unknown as Block[];
-    for (const t of toolUses) turns.set(t.id, stash);
-    if (turns.size > 2000) turns.delete(turns.keys().next().value!);
-  }
-  const text = res.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  return Response.json({
-    id: res.id,
-    model: res.model,
-    stopReason: res.stop_reason,
-    refusal: res.stop_reason === "refusal" ? (res.stop_details?.explanation ?? "The model declined this request.") : null,
-    text,
-    toolCalls: toolUses.map((t) => ({ callId: t.id, name: t.name, arguments: JSON.stringify(t.input) })),
-    usage: { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens },
-  });
 }

@@ -7,7 +7,7 @@ import * as s from "@/lib/db/schema";
 import { ledgerTotals } from "@/lib/engine/ledger";
 import { activityFeed, societyContext } from "@/lib/queries";
 import { payMode } from "@/lib/paypal/gateway";
-import { aiEnabled, aiModel } from "@/lib/ai/claude";
+import { aiEnabled, aiModel } from "@/lib/ai/llm";
 import { fmt } from "@/lib/util/money";
 import { refreshRetailAction, setSellerStatusAction } from "@/app/actions";
 import { channel3Enabled } from "@/lib/channel3";

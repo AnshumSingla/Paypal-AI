@@ -1,4 +1,4 @@
-// AG Studio LLM adapter backed by Claude (via this app's /api/ai/studio route, which holds the key).
+// AG Studio LLM adapter backed by Gemini or Groq (via this app's /api/ai/studio route, which holds the keys).
 // Each turn is one non-streaming call; the reply is replayed to Studio as AG-UI style events.
 import type { AgAiEvent, AgAiOutputItem, AgLlmAdapter, AgLlmResponse } from "ag-studio";
 
@@ -13,7 +13,7 @@ type Reply = {
   error?: { code: string; message: string };
 };
 
-export function claudeAdapter({ endpoint }: { endpoint: string }): AgLlmAdapter {
+export function aiAdapter({ endpoint }: { endpoint: string }): AgLlmAdapter {
   return {
     executeTurn(request, options) {
       const reply = fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request), signal: options?.signal }).then(async (r) => (await r.json()) as Reply);
@@ -29,8 +29,8 @@ export function claudeAdapter({ endpoint }: { endpoint: string }): AgLlmAdapter 
         return {
           id: r.id,
           createdAt,
-          status: r.stopReason === "max_tokens" ? "incomplete" : "completed",
-          ...(r.stopReason === "max_tokens" ? { incompleteDetails: { reason: "max_output_tokens" as const } } : {}),
+          status: r.stopReason === "length" ? "incomplete" : "completed",
+          ...(r.stopReason === "length" ? { incompleteDetails: { reason: "max_output_tokens" as const } } : {}),
           output,
           model: r.model,
           usage: { inputTokens: r.usage.inputTokens, outputTokens: r.usage.outputTokens, totalTokens: r.usage.inputTokens + r.usage.outputTokens },

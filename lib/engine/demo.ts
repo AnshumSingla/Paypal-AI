@@ -103,7 +103,7 @@ export async function resetDemo(db: DB) {
 // Share of delivered lines that residents report missing in past weeks, per supplier. This is what
 // makes their trust scores differ; everything else in the history comes from the real engine.
 const HISTORY_ISSUE_RATE: Record<string, number> = { sel_fresh: 0.02, sel_valley: 0.14, sel_corner: 0.05 };
-const OFFLINE_KEYS = ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "ANTHROPIC_API_KEY", "CHANNEL3_API_KEY"] as const;
+const OFFLINE_KEYS = ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "GEMINI_API_KEY", "GROQ_API_KEY", "CHANNEL3_API_KEY"] as const;
 
 /**
  * Weeks 43-45 run through the real engine so the dashboard and trust scores rest on history.

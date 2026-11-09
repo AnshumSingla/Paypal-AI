@@ -131,7 +131,7 @@ export async function parseListAction(input: { text?: string; imageDataUrl?: str
     if (!input.text?.trim() && !input.imageDataUrl) throw new PolicyError("Type your list or add a photo.");
     if (input.imageDataUrl && input.imageDataUrl.length > 7_000_000) throw new PolicyError("Photo is too large; please use one under 5 MB.");
     const data = await parseBasket(db, { ...input, householdId: household.id });
-    if (data.photoNeedsAi) throw new PolicyError("Reading photos needs the Claude API key; type the list instead for now.");
+    if (data.photoNeedsAi) throw new PolicyError("Reading photos needs a Gemini or Groq API key; type the list instead for now.");
     return { data };
   });
 }
