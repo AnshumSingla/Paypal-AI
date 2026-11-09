@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -25,7 +26,7 @@ const POOL_TONE: Record<string, string> = { PRICED: "bg-accent-soft text-accent-
 const PAYOUT_STATUS: Record<string, string> = { SUCCESS: "Paid", SENT: "Sent", PENDING: "Pending", FAILED: "Failed", CARRIED_FORWARD: "Carried forward" };
 const PAYOUT_TONE: Record<string, string> = { SUCCESS: "bg-success-soft text-success", SENT: "bg-brand-soft text-brand-dark", PENDING: "bg-accent-soft text-accent-ink", FAILED: "bg-danger-soft text-danger", CARRIED_FORWARD: "bg-accent-soft text-accent-ink" };
 
-export default async function SellerPage() {
+export default async function SellerPage({ searchParams }: { searchParams: Promise<{ pool?: string }> }) {
   const { db, user, seller } = await getSession();
   if (!user || !seller) redirect("/");
   const { society, cycle } = await societyContext(db);
@@ -45,7 +46,10 @@ export default async function SellerPage() {
   const open = pools.filter((p) => p.status === "OPEN_FOR_BIDS");
   const paidOut = payouts.filter((p) => ["SUCCESS", "SENT"].includes(p.po.status)).reduce((a, p) => a + p.po.netCents, 0);
   const bidding = cycle.phase === "BID";
-  const hasMain = bidding || won.length > 0;
+  // One pool's bid form at a time: the one picked in the list, else the first without a bid from you.
+  const picked = (await searchParams).pool;
+  const sel = open.find((p) => p.id === picked) ?? open.find((p) => !bidByPool.has(p.id)) ?? open[0];
+  const selBid = sel ? bidByPool.get(sel.id) : undefined;
 
   return (
     <div>
@@ -58,92 +62,107 @@ export default async function SellerPage() {
       )}
 
       <StatRow>
-        <Stat icon={<PackageOpen size={20} aria-hidden />} tone="brand" title="Open pools" value={open.length} sentence="open for bids, totals only" href={bidding ? "#open-pools" : undefined} action="Bid on pools" />
+        <Stat icon={<PackageOpen size={20} aria-hidden />} tone="brand" title="Open pools" value={open.length} sentence={`${myBids.filter((b) => b.status === "submitted").length} with your bid`} href={bidding ? "#open-pools" : undefined} action="Bid on pools" />
         <Stat icon={<Trophy size={20} aria-hidden />} tone="success" title="Pools won" value={won.length} sentence={`in ${cycle.weekLabel}`} href={won.length ? "#your-pools" : undefined} action="Track your pools" />
         <Stat icon={<Percent size={20} aria-hidden />} tone="ink" title="Commission" value={`${COMMISSION_BPS[seller.plan] / 100}%`} sentence={`on the ${seller.plan} plan`} href="#plan" action="Change plan" />
         <Stat icon={<Wallet size={20} aria-hidden />} tone={seller.balanceCents < 0 ? "danger" : "brand"} title="Paid out" value={fmt(paidOut)} sentence={seller.balanceCents < 0 ? `balance ${fmt(seller.balanceCents)}` : "all time, via PayPal Payouts"} href="#payouts" action="See payouts" />
       </StatRow>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:grid-rows-[auto_1fr]">
-        {hasMain && (
-          <div className="min-w-0 space-y-6 xl:col-start-1 xl:row-start-1">
-            {bidding && (
-              <Panel id="open-pools" title="Open for bids" description={`Pooled demand, totals only. Prices are landed at ${society.dropPoint}, one bulk drop.`} flush>
-                {!open.length ? (
-                  <Empty icon={<PackageOpen size={20} aria-hidden />} title="No pools open for bids" />
-                ) : (
-                  <ul className="divide-y divide-line">
-                    {open.map((p) => {
-                      const mine = bidByPool.get(p.id);
-                      return (
-                        <li key={p.id} className="px-6 py-5">
-                          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <h3 className="font-semibold">
-                                {p.product.title} <span className="font-normal text-muted">{p.product.packSize}</span>
-                              </h3>
-                              <p className="num mt-1 text-sm text-muted">
-                                <span className="font-semibold text-ink">{p.demand}</span> packs wanted. Retail {fmt(p.product.retailRefCents)}. {p.bids} bid{p.bids === 1 ? "" : "s"}.
-                              </p>
-                              {p.aiNotes && (
-                                <p className="mt-1 flex items-start gap-1.5 text-sm text-info">
-                                  <Sparkles size={16} aria-hidden className="mt-1 shrink-0" />
-                                  {p.aiNotes}
-                                </p>
-                              )}
-                            </div>
-                            {mine && (
-                              <div className="flex flex-col items-end gap-1 text-right text-sm">
-                                <span className="chip bg-info-soft text-info">Your bid scores {mine.aiScore ?? "—"}</span>
-                                {(mine.aiFlags ?? []).map((f) => (
-                                  <span key={f} className="text-danger">
-                                    {f}
-                                  </span>
-                                ))}
-                                {mine.status === "submitted" && (
-                                  <ActionButton action={withdrawBidAction.bind(null, mine.id)} className="btn btn-ghost !py-1 text-sm">
-                                    Withdraw bid
-                                  </ActionButton>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          <BidBuilder poolId={p.id} demand={p.demand} retailCents={p.product.retailRefCents} title={p.product.title} existing={mine && mine.status === "submitted" ? mine : undefined} />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </Panel>
-            )}
-
-            {won.length > 0 && (
-              <Panel id="your-pools" title="Your pools this week" description="Live progress toward each price break.">
-                <ul className="grid gap-4 md:grid-cols-2">
-                  {won.map((p) => (
-                    <li key={p.id} className="rounded-xl border border-line p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-semibold">{p.product.title}</h3>
-                        <span className={`chip ${POOL_TONE[p.status] ?? "bg-surface-2 text-ink"}`}>{POOL_STATUS[p.status] ?? p.status}</span>
-                      </div>
-                      <p className="num mb-4 mt-1 text-sm text-muted">
-                        {p.committed} packs {p.finalUnit ? `at ${fmt(p.finalUnit)}` : "held so far"}. Deliver {p.winning?.deliveryWindow}.
-                      </p>
-                      <TierBar tiers={p.winning!.tiers} committed={p.committed} pending={p.pending} retail={p.product.retailRefCents} />
-                    </li>
-                  ))}
+      <div className="space-y-6">
+        {bidding && (
+          <div id="open-pools" className="grid scroll-mt-24 items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            <Panel title="Open for bids" description="Totals only, never who ordered." aside={<span className="chip bg-surface-2 text-muted">{open.length}</span>} flush>
+              {!open.length ? (
+                <Empty icon={<PackageOpen size={20} aria-hidden />} title="No pools open for bids" />
+              ) : (
+                <ul className="divide-y divide-line">
+                  {open.map((p) => {
+                    const mine = bidByPool.get(p.id);
+                    const active = p.id === sel?.id;
+                    return (
+                      <li key={p.id}>
+                        <Link href={`?pool=${p.id}#bid`} scroll={false} aria-current={active ? "true" : undefined} className={`flex items-center justify-between gap-3 px-5 py-3 transition-colors ${active ? "bg-brand-soft" : "hover:bg-surface-2"}`}>
+                          <span className="min-w-0">
+                            <span className={`block truncate font-medium ${active ? "text-brand-dark" : ""}`}>{p.product.title}</span>
+                            <span className="num block text-sm text-muted">
+                              {p.demand} packs, retail {fmt(p.product.retailRefCents)}
+                            </span>
+                          </span>
+                          {mine ? <span className="chip shrink-0 bg-success-soft text-success">Bid in</span> : <span className="chip shrink-0 bg-surface-2 text-muted">{p.bids} bids</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
-              </Panel>
+              )}
+            </Panel>
+
+            {sel && (
+              <div className="lg:sticky lg:top-20">
+                <Panel
+                  id="bid"
+                  title={`${selBid ? "Your bid" : "Bid"}: ${sel.product.title}`}
+                  description={`${sel.product.packSize}. ${sel.demand} packs wanted, retail ${fmt(sel.product.retailRefCents)}, ${sel.bids} bid${sel.bids === 1 ? "" : "s"} so far.`}
+                  aside={
+                    selBid?.status === "submitted" ? (
+                      <ActionButton action={withdrawBidAction.bind(null, selBid.id)} className="btn btn-ghost !py-1 text-sm">
+                        Withdraw
+                      </ActionButton>
+                    ) : null
+                  }
+                >
+                  {(sel.aiNotes || selBid) && (
+                    <div className="mb-5 space-y-2">
+                      {sel.aiNotes && (
+                        <p className="flex items-start gap-2 rounded-lg bg-info-soft p-3 text-sm text-info">
+                          <Sparkles size={16} aria-hidden className="mt-0.5 shrink-0" />
+                          {sel.aiNotes}
+                        </p>
+                      )}
+                      {selBid && (
+                        <p className="text-sm">
+                          <span className="chip bg-info-soft text-info">Score {selBid.aiScore ?? "-"}</span>
+                          {(selBid.aiFlags ?? []).map((f) => (
+                            <span key={f} className="ml-2 text-danger">
+                              {f}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <BidBuilder key={sel.id} poolId={sel.id} demand={sel.demand} retailCents={sel.product.retailRefCents} title={sel.product.title} existing={selBid && selBid.status === "submitted" ? selBid : undefined} />
+                </Panel>
+              </div>
             )}
           </div>
         )}
 
-        <div className="min-w-0 space-y-6 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+        {won.length > 0 && (
+          <Panel id="your-pools" title="Your pools this week" description="Live progress toward each price break.">
+            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {won.map((p) => (
+                <li key={p.id} className="rounded-xl border border-line p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-semibold">{p.product.title}</h3>
+                    <span className={`chip ${POOL_TONE[p.status] ?? "bg-surface-2 text-ink"}`}>{POOL_STATUS[p.status] ?? p.status}</span>
+                  </div>
+                  <p className="num mb-4 mt-1 text-sm text-muted">
+                    {p.committed} packs {p.finalUnit ? `at ${fmt(p.finalUnit)}` : "held so far"}. Deliver {p.winning?.deliveryWindow}.
+                  </p>
+                  <TierBar tiers={p.winning!.tiers} committed={p.committed} pending={p.pending} retail={p.product.retailRefCents} />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
+
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           <PlanCard current={seller.plan} mode={payMode()} clientId={process.env.PAYPAL_CLIENT_ID} planIds={ids} />
           <Panel
             id="payouts"
             title="Payouts"
-            description={`Sent with PayPal Payouts to ${seller.payoutEmail} once the 24-hour issue window closes.`}
+            description={`Sent to ${seller.payoutEmail} after the 24-hour window for problems.`}
             aside={
               payouts.some((p) => p.po.status === "SENT") ? (
                 <ActionButton action={refreshPayoutsAction} className="btn btn-ghost !py-1 text-sm">
@@ -164,7 +183,7 @@ export default async function SellerPage() {
                       <span className="num font-semibold">{fmt(po.netCents)}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-                      <span className="num text-xs text-muted">
+                      <span className="num text-sm text-muted">
                         Gross {fmt(po.grossCents)}, commission −{fmt(po.commissionCents)}, refunds −{fmt(po.refundsCents)}
                       </span>
                       <span className={`chip ${PAYOUT_TONE[po.status] ?? "bg-surface-2 text-ink"}`}>{PAYOUT_STATUS[po.status] ?? po.status}</span>
@@ -176,7 +195,7 @@ export default async function SellerPage() {
                         </ActionButton>
                       </div>
                     )}
-                    {po.paypalBatchId && <p className="mono mt-1 truncate text-xs text-muted">Batch {po.paypalBatchId}</p>}
+                    {po.paypalBatchId && <p className="mono mt-1 truncate text-sm text-subtle">Batch {po.paypalBatchId}</p>}
                   </li>
                 ))}
               </ul>
@@ -184,9 +203,7 @@ export default async function SellerPage() {
           </Panel>
         </div>
 
-        <div className={`min-w-0 xl:col-start-1 ${hasMain ? "xl:row-start-2" : "xl:row-start-1"}`}>
-          <SecretaryPanel db={db} cycleId={cycle.id} role="seller" />
-        </div>
+        <SecretaryPanel db={db} cycleId={cycle.id} role="seller" />
       </div>
     </div>
   );
