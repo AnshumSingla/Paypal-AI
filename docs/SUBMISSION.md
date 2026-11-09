@@ -1,0 +1,75 @@
+# Submission kit
+
+Everything for the Devpost form and the video, in one place. Fill the three blanks marked **[ ]** before submitting.
+
+## Devpost fields
+
+**Name:** Collective
+
+**Tagline (under 200 characters):** Your housing society buys groceries in bulk. Approve once with PayPal; an AI Society Secretary gets trusted suppliers to compete; pay only the price the building unlocked.
+
+**Links:** GitHub repo (public, MIT licence visible) **[ ]**. Hosted demo on Render **[ ]**. YouTube video **[ ]**.
+
+**Built with:** paypal, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, claude, anthropic, ag-grid, ag-studio, channel3, render, next.js, typescript, postgresql, drizzle
+
+## Description (paste into "About the project")
+
+### Inspiration
+In an Indian housing society, forty flats buy the same rice, dal, oil and eggs every week, one by one, at retail. Wholesalers would charge 10 to 30% less, but only above a minimum order no single flat reaches. A volunteer usually pools orders in a WhatsApp group, chases payments and fronts the money. It breaks at about fifteen households, and the volunteer carries the risk.
+
+### What it does
+Collective does the volunteer's job with an AI agent and moves the money risk to PayPal.
+1. Residents type a list or photograph a handwritten one; Claude turns it into products.
+2. Each product becomes a pool. Local suppliers bid a ladder of prices that fall as the order grows.
+3. Each resident approves **one PayPal hold for the highest price** their items could cost. As neighbours join, the price falls for everyone.
+4. The **Society Secretary**, a Claude agent, tells each supplier how many households and dollars are already authorized in PayPal and asks for a lower price at that quantity.
+5. At cutoff PayPal **captures only the price the building unlocked**; the rest of every hold goes back. Failed pools are voided.
+6. If something is missing, the Secretary refunds it through PayPal itself, within limits set in code. Suppliers are paid with PayPal Payouts after 24 hours.
+
+### How we built it (technological implementation)
+- **PayPal:** Orders v2 with `intent=AUTHORIZE`, Payments v2 authorize, partial capture with `final_capture`, void, get authorization, refunds, Payouts, Subscriptions (catalog, plans) for supplier plans, and verified webhooks. Every POST carries a `PayPal-Request-Id`. A double-entry ledger records every charge, fee, refund, commission and payout and must balance.
+- **AI:** one tool-using Claude agent (Anthropic SDK tool runner) with eight tools, plus vision for handwritten lists and photo complaints, structured outputs, and a Claude-backed AG Studio analyst. Every decision is logged with its model.
+- **Safety by construction:** no agent can capture, void or pay out. The Secretary's refund tool is checked in code ($10 maximum, never above what was charged, once per issue). A supplier's new price can only be lower, never below its floor, and never changes the first price that holds were sized on, so every capture fits its hold.
+- **Trust:** supplier scores come from verified deliveries and upheld complaints, smoothed and weighted to recent weeks. Bids are scored price 40, trust 45, reachable minimum 15, so the cheapest supplier doesn't win by default.
+- **Reliability:** 44 automated tests, including a full week, a second week after reset, a failed void not blocking cutoff, idempotent re-runs, restart recovery and the guided demo end to end. Works with no keys (PayPal stand-in, rule-based AI).
+
+### Design
+One calm interface for four people: resident, society captain, supplier and operator. A guided demo bar walks the whole week with one button per step. The receipt shows approved, paid and released, with the PayPal ID of each step and a "Check this with PayPal" button.
+
+### Potential impact
+Households save on staples they buy anyway; the volunteer stops fronting money; small local suppliers get funded, consolidated orders and a reputation they earn by delivering. The same pattern (approve a maximum, pay what the group unlocked) works for any community purchase: school supplies, maintenance, solar.
+
+### What's new (innovation)
+- **The PayPal hold is the agent's budget**: the spending limit lives in the payment rail, not in a prompt.
+- **Money on the table**: an agent negotiates with funds that are already authorized.
+- **Trust beats cheap**, from verified payment and delivery facts rather than star ratings.
+
+### Challenges, accomplishments, what we learned, what's next
+- Making partial capture, void and refund safe to retry and safe after a crash.
+- Next: PayPal Multiparty so suppliers are paid directly with `platform_fees`; cross-society pools; a local payment partner for rupee payments in India.
+
+### Honest limits
+Sandbox only. The Pune demo runs in US dollars because PayPal doesn't process domestic rupee payments.
+
+## Testing instructions (paste into "Testing instructions")
+1. Open the hosted demo **[ ]** or run locally: `npm install && npm run dev`, then http://localhost:3000. No keys are needed.
+2. Pick any person. Use the **Guided demo** bar at the top: one button per step, and it opens the right person's view.
+3. On the resident's page during Confirm & pay, approve the hold with the PayPal button (sandbox personal account **[ ]**), or use **Hold with a PayPal sandbox test card**.
+4. **Reset** (demo controls) returns to the start of Week 46 at any time.
+
+## Video script (2 minutes 45 seconds)
+
+Record the hosted demo with real sandbox keys. Voice-over recorded separately; captions on. No music.
+
+| Time | On screen | Voice-over |
+|---|---|---|
+| 0:00 | Landing page, last week's example card | "Forty flats in a Pune housing society buy the same rice and dal every week, one by one, at retail. Together they'd pay wholesale. Collective makes that happen, with PayPal and an AI Society Secretary." |
+| 0:15 | Resident, step 1: Ananya's list becomes products | "Ananya types her list, or photographs it. Claude turns it into products." |
+| 0:25 | Captain, steps 2 to 4: bids, "Recommend ... despite costing more" | "Local suppliers bid price ladders. The Secretary ranks them on price and a trust score built from real deliveries and complaints, so the cheapest supplier doesn't win by default." |
+| 0:50 | Resident, step 5: PayPal popup, hold placed | "Ananya approves one PayPal hold for the most she could pay. That hold is the limit; nobody can charge more." |
+| 1:05 | Step 6 twice: tier bars move, price drops | "As neighbours join, the price falls for everyone." |
+| 1:15 | Captain, step 7: Secretary feed, supplier lowers price | "Then the Secretary goes back to each supplier: nineteen households, $168 already authorized in PayPal. Will you go lower? Prices can only go down." |
+| 1:35 | Step 8 and receipt: approved struck through, paid, PayPal IDs; PayPal sandbox account | "At cutoff PayPal captures only the price the building unlocked, and releases the rest. Here it is in the sandbox." |
+| 1:55 | Step 10: missing pack refunded by the Secretary | "A pack is missing. The Secretary checks the claim and refunds it through PayPal itself, within limits set in code." |
+| 2:10 | Supplier payouts, operator ledger "Balanced", Analytics, ask the AI analyst | "Suppliers are paid with PayPal Payouts. The ledger balances to the cent, and the operator can ask questions of the data." |
+| 2:30 | "Who may do what" table from the README | "The agent decides; code sets the limits; PayPal moves the money. Collective: wholesale prices for every housing society." |
