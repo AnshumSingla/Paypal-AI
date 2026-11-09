@@ -4,6 +4,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgLlmRequest } from "ag-studio";
 import { aiEnabled, aiModel, spendAiCall } from "@/lib/ai/claude";
+import { getSession } from "@/lib/session";
 
 type Block = Anthropic.Beta.Messages.BetaContentBlockParam;
 type Msg = { role: "user" | "assistant"; content: Block[] };
@@ -63,6 +64,8 @@ function toMessages(req: AgLlmRequest) {
 }
 
 export async function POST(request: Request) {
+  const { user } = await getSession();
+  if (user?.role !== "operator") return Response.json({ error: { code: "forbidden", message: "Open the operator view to use the AI analyst." } }, { status: 403 });
   if (!aiEnabled()) return Response.json({ error: { code: "ai_disabled", message: "The AI analyst is off: no API key, or this hour's demo budget is used up." } }, { status: 503 });
   spendAiCall();
   const req = (await request.json()) as AgLlmRequest;
