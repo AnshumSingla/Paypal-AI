@@ -1,4 +1,4 @@
-// PoolCart data model (docs/02-ARCHITECTURE.md §5). All money is integer cents, USD.
+// Collective data model (docs/02-ARCHITECTURE.md §5). All money is integer cents, USD.
 import { pgTable, text, integer, boolean, timestamp, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 const id = () => text("id").primaryKey();

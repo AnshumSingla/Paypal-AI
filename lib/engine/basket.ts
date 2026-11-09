@@ -72,7 +72,7 @@ export async function startCheckout(db: DB, basketId: string, actor: string) {
   const { lines, cents } = await basketCeiling(db, basketId);
   if (!lines.length || cents <= 0) throw new PolicyError("Add at least one item first.");
   const gw = gateway();
-  const { orderId } = await gw.createWalletOrder({ cents, referenceId: basketId, description: `PoolCart ${c.weekLabel}: ${lines.length} items (hold at max price)` });
+  const { orderId } = await gw.createWalletOrder({ cents, referenceId: basketId, description: `Collective ${c.weekLabel}: ${lines.length} items (hold at max price)` });
   await db.insert(s.payment).values({ id: newId("pay"), basketId, mode: gw.mode, method: "paypal_wallet", paypalOrderId: orderId, authorizedCents: cents, status: "CREATED" });
   await db.update(s.basket).set({ status: "AWAITING_APPROVAL", ceilingCents: cents }).where(eq(s.basket.id, basketId));
   return { orderId, cents };
@@ -116,7 +116,7 @@ export async function cardCheckout(db: DB, basketId: string, actor: string) {
   if (!lines.length) return;
   const [bk] = await db.select().from(s.basket).where(eq(s.basket.id, basketId));
   const gw = gateway();
-  const hold = await gw.cardHold({ cents, referenceId: basketId, description: "PoolCart simulated neighbour basket" });
+  const hold = await gw.cardHold({ cents, referenceId: basketId, description: "Collective simulated neighbour basket" });
   const paymentId = newId("pay");
   await db.insert(s.payment).values({ id: paymentId, basketId, mode: gw.mode, method: "card", paypalOrderId: hold.orderId, authorizedCents: cents, status: "CREATED" });
   await db.update(s.basket).set({ ceilingCents: cents }).where(eq(s.basket.id, bk.id));

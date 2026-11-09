@@ -116,7 +116,7 @@ export async function buildPools(db: DB, cycleId: string): Promise<string> {
     `cycle:${cycleId}`,
     () =>
       structured({
-        system: `You are PoolCart's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
+        system: `You are Collective's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
         content: rows.map((r) => `${r.productId}: ${r.title}${r.brand ? ` (${r.brand})` : ""} ${r.packSize}: ${r.qty} packs from ${r.households} households, ${r.flexible} packs brand-flexible`).join("\n"),
         schema: Brief,
         effort: "low",

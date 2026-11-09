@@ -16,7 +16,7 @@ export async function planIds(): Promise<Record<PaidPlan, string> | null> {
   if (payMode() !== "sandbox") return null;
   if (process.env.PAYPAL_PLAN_ID_PRO && process.env.PAYPAL_PLAN_ID_PARTNER) return { pro: process.env.PAYPAL_PLAN_ID_PRO, partner: process.env.PAYPAL_PLAN_ID_PARTNER };
   g.__poolcartPlans ??= (async () => {
-    const productRes = await paypalRest("POST", "/v1/catalogs/products", { name: "PoolCart Seller Plans", type: "SERVICE", category: "SOFTWARE" }, "poolcart-seller-plans-product");
+    const productRes = await paypalRest("POST", "/v1/catalogs/products", { name: "Collective Supplier Plans", type: "SERVICE", category: "SOFTWARE" }, "collective-supplier-plans-product");
     const mk = async (plan: PaidPlan, name: string) => {
       const r = await paypalRest(
         "POST",
@@ -32,7 +32,7 @@ export async function planIds(): Promise<Record<PaidPlan, string> | null> {
       );
       return r.id as string;
     };
-    const ids = { pro: await mk("pro", "PoolCart Pro (4% commission)"), partner: await mk("partner", "PoolCart Partner (2.5% commission)") };
+    const ids = { pro: await mk("pro", "Collective Pro (4% commission)"), partner: await mk("partner", "Collective Partner (2.5% commission)") };
     console.log(`[paypal] created sandbox plans; set PAYPAL_PLAN_ID_PRO=${ids.pro} PAYPAL_PLAN_ID_PARTNER=${ids.partner} to reuse them`);
     return ids;
   })();

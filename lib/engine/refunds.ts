@@ -121,7 +121,7 @@ async function executeRefund(db: DB, issueId: string, cents: number, decision: "
   const remaining = ctx.l.qty * ctx.l.finalUnitCents! - ctx.l.refundedCents;
   if (cents <= 0 || cents > remaining) throw new PolicyError(`Refund must be between $0.01 and ${fmt(remaining)} for this item.`);
   const [pay] = await db.select().from(s.payment).where(and(eq(s.payment.basketId, ctx.bk.id), eq(s.payment.status, "CAPTURED")));
-  const r = await gateway().refund({ captureId: pay.paypalCaptureId!, cents, note: `PoolCart refund: ${ctx.prod.title} (${iss.type.replace("_", " ")})`, requestId: `refund-${issueId}` });
+  const r = await gateway().refund({ captureId: pay.paypalCaptureId!, cents, note: `Collective refund: ${ctx.prod.title} (${iss.type.replace("_", " ")})`, requestId: `refund-${issueId}` });
   await db.insert(s.refund).values({ id: newId("ref"), issueId, paymentId: pay.id, paypalRefundId: r.refundId, amountCents: cents, reason: iss.type, chargedTo: "seller", sellerId: ctx.bid.sellerId });
   const lineRefunded = ctx.l.refundedCents + cents;
   await db.update(s.basketLine).set({ refundedCents: lineRefunded, status: lineRefunded >= ctx.l.qty * ctx.l.finalUnitCents! ? "refunded_full" : "refunded_partial" }).where(eq(s.basketLine.id, ctx.l.id));

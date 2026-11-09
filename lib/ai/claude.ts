@@ -1,4 +1,4 @@
-// Thin wrapper over the Anthropic SDK for PoolCart's agents.
+// Thin wrapper over the Anthropic SDK for Collective's agents.
 // Every agent returns schema-validated JSON (structured outputs) and records an ai_decision row.
 // With no ANTHROPIC_API_KEY the agents use their rule-based fallback (Policies §14.5) and say so.
 import Anthropic from "@anthropic-ai/sdk";

@@ -13,3 +13,6 @@ spikes/.results.json
 .data/
 next-env.d.ts
 *.tsbuildinfo
+
+# brag video intermediates (frames, browser profile)
+brag-output/work/

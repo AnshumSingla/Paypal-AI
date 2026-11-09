@@ -1,4 +1,4 @@
-// The one place PoolCart talks to PayPal. Two implementations behind one interface:
+// The one place Collective talks to PayPal. Two implementations behind one interface:
 //   sandbox: real PayPal REST calls against api-m.sandbox.paypal.com (when PAYPAL_CLIENT_ID/SECRET are set)
 //   mock:    an in-process stand-in with the same rules, so the app runs before keys exist.
 // Only the settlement engine (lib/engine) calls the money-moving methods. AI code never imports this.
@@ -91,7 +91,7 @@ const sandbox: Gateway = {
     const order = await call("POST", "/v2/checkout/orders", {
       intent: "AUTHORIZE",
       purchase_units: [{ reference_id: referenceId, description, amount: usd(cents) }],
-      payment_source: { paypal: { experience_context: { brand_name: "PoolCart", shipping_preference: "NO_SHIPPING", user_action: "CONTINUE" } } },
+      payment_source: { paypal: { experience_context: { brand_name: "Collective", shipping_preference: "NO_SHIPPING", user_action: "CONTINUE" } } },
     });
     return { orderId: order.id };
   },
@@ -100,7 +100,7 @@ const sandbox: Gateway = {
     const auth = o.purchase_units[0].payments.authorizations[0];
     return { authorizationId: auth.id, status: auth.status, payerEmail: o.payer?.email_address };
   },
-  async cardHold({ cents, referenceId, description, name = "PoolCart Neighbour" }) {
+  async cardHold({ cents, referenceId, description, name = "Collective Neighbour" }) {
     const order = await call("POST", "/v2/checkout/orders", {
       intent: "AUTHORIZE",
       purchase_units: [{ reference_id: referenceId, description, amount: usd(cents) }],
@@ -129,7 +129,7 @@ const sandbox: Gateway = {
     const c = await call(
       "POST",
       `/v2/payments/authorizations/${authorizationId}/capture`,
-      { amount: usd(cents), final_capture: finalCapture, invoice_id: invoiceId, note_to_payer: "PoolCart: you paid the price your building unlocked." },
+      { amount: usd(cents), final_capture: finalCapture, invoice_id: invoiceId, note_to_payer: "Collective: you paid the price your building unlocked." },
       `capture-${invoiceId}`,
     );
     return { captureId: c.id, status: c.status, feeCents: toCents(c.seller_receivable_breakdown?.paypal_fee?.value) };
