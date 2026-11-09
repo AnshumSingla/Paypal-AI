@@ -17,6 +17,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",
     "@electric-sql/pglite": "^0.5.15",
+    "@paypal/paypal-server-sdk": "^2.5.0",
     "@paypal/react-paypal-js": "^10.6.1",
     "ag-grid-community": "36.2.0",
     "ag-grid-react": "36.2.0",
