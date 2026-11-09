@@ -116,20 +116,22 @@ export async function buildPools(db: DB, cycleId: string): Promise<string> {
     `cycle:${cycleId}`,
     () =>
       llmJSON({
-        system: `You are Collective's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size.`,
+        system: `You are Collective's Pool Builder. Each product with demand becomes a pool that local sellers bid on. Write a one-sentence note per pool for sellers (no resident identities) and list merge suggestions only where brand-flexible demand could move to a related pool of the same product type and pack size. Write notes and suggestions in plain words with product names; never show the ids, which are only for the productId field.`,
         prompt: rows.map((r) => `${r.productId}: ${r.title}${r.brand ? ` (${r.brand})` : ""} ${r.packSize}: ${r.qty} packs from ${r.households} households, ${r.flexible} packs brand-flexible`).join("\n"),
         schema: Brief,
       }),
     () => ({ pools: rows.map((r) => ({ productId: r.productId!, note: `${r.households} households want ${r.qty} packs; ${r.flexible} are brand-flexible.` })), mergeSuggestions: [] }),
   );
-  const notes = new Map(brief.data.pools.map((p) => [p.productId, p.note]));
+  const notes = new Map(brief.data.pools.map((p) => [p.productId, rows.reduce((acc, r) => acc.split(r.productId!).join(r.title), p.note)]));
   if (rows.length) {
     await db
       .insert(s.pool)
       .values(rows.map((r) => ({ id: newId("pool"), cycleId, productId: r.productId!, status: "OPEN_FOR_BIDS" as const, demandEstimate: r.qty, aiNotes: notes.get(r.productId!) ?? null })))
       .onConflictDoNothing();
   }
-  const merge = brief.data.mergeSuggestions.length ? ` Merge ideas: ${brief.data.mergeSuggestions.join(" ")}` : "";
+  // Readers see product names, not ids, even if the model slips one in.
+  const named = (x: string) => rows.reduce((acc, r) => acc.split(r.productId!).join(r.title), x);
+  const merge = brief.data.mergeSuggestions.length ? ` Merge ideas: ${brief.data.mergeSuggestions.map(named).join(" ")}` : "";
   return `${rows.length} pools opened for bids (${brief.source === "ai" ? "Pool Builder AI" : "rules"}).${merge}`;
 }
 
