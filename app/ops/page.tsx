@@ -9,7 +9,8 @@ import { activityFeed, societyContext } from "@/lib/queries";
 import { payMode } from "@/lib/paypal/gateway";
 import { aiEnabled, aiModel } from "@/lib/ai/claude";
 import { fmt } from "@/lib/util/money";
-import { setSellerStatusAction } from "@/app/actions";
+import { refreshRetailAction, setSellerStatusAction } from "@/app/actions";
+import { channel3Enabled } from "@/lib/channel3";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { ActivityFeed, Kpi } from "@/app/_components/Bits";
 import { CycleBar } from "@/app/_components/CycleBar";
@@ -49,6 +50,7 @@ export default async function OpsPage() {
     return r ? r.debit - r.credit : 0;
   };
   const trust = await trustScores(db, "seller", sellers.map((x) => x.id));
+  const [retail] = await db.select({ all: sql<number>`count(*)::int`, live: sql<number>`count(*) filter (where ${s.product.retailSource} = 'channel3')::int` }).from(s.product);
   const [aiStats] = await db.select({ ai: sql<number>`count(*) filter (where ${s.aiDecision.model} <> 'rules')::int`, rules: sql<number>`count(*) filter (where ${s.aiDecision.model} = 'rules')::int` }).from(s.aiDecision);
 
   return (
@@ -70,6 +72,22 @@ export default async function OpsPage() {
           <Link href="/ops/dashboard" className="btn btn-primary">
             Open dashboard
           </Link>
+        </div>
+
+        <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Retail prices</h2>
+            <p className="text-sm text-muted">
+              Residents' savings are measured against retail. {retail.live} of {retail.all} products use today's price from Channel3; the rest use the catalog price.
+            </p>
+          </div>
+          {channel3Enabled() ? (
+            <ActionButton action={refreshRetailAction} className="btn btn-ghost">
+              Check with Channel3
+            </ActionButton>
+          ) : (
+            <span className="text-sm text-muted">Add a Channel3 key to check them.</span>
+          )}
         </div>
 
         <OpsGrids

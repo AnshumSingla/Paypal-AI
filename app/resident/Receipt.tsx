@@ -40,7 +40,7 @@ export function Receipt({ basket }: { basket: B }) {
         </div>
         {retail >= 1 && (
           <div>
-            <div className="label">Saved against retail</div>
+            <div className="label">Saved against retail{kept.some(({ x }) => x.prod.retailSource === "channel3") ? " (Channel3 prices)" : ""}</div>
             <div className="text-2xl">
               {fmt(retail - charged + refunded)} <span className="text-base text-muted">({Math.round(((retail - charged + refunded) / retail) * 100)}%)</span>
             </div>

@@ -21,6 +21,7 @@ import { activateSubscription } from "@/lib/paypal/subscriptions";
 import { runSecretary } from "@/lib/ai/secretary";
 import { PERSONAS } from "@/lib/db/seed";
 import { performTourStep, tourStep } from "@/lib/engine/tour";
+import { refreshRetailPrices } from "@/lib/engine/retail";
 
 export type ActionResult<T = undefined> = { ok: true; message?: string; data?: T } | { ok: false; error: string };
 
@@ -339,5 +340,12 @@ export async function setSellerStatusAction(sellerId: string, status: "approved"
     const { db, user } = await require(["operator"]);
     await db.update(s.seller).set({ status }).where(eq(s.seller.id, sellerId));
     await log(db, null, user.name, "seller", `Supplier ${sellerId} ${status}.`);
+  });
+}
+
+export async function refreshRetailAction() {
+  return guard(async () => {
+    const { db, user } = await require(["operator"]);
+    return { message: await refreshRetailPrices(db, user.name) };
   });
 }

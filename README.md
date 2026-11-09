@@ -72,8 +72,8 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge.
 | Tool | Use |
 |---|---|
 | **AG Grid / AG Studio** | Demand board with trust, in-cell "next price" progress and flashing price changes; ledger and AI decision grids; AG Studio analytics with a supplier-trust page and a Claude-backed analyst (`app/ops/dashboard/claude-adapter.ts`) |
-| **Channel3** | Identifies unfamiliar products and supplies the retail price that savings are measured against |
-| **Render** | `render.yaml` blueprint: web service and managed Postgres |
+| **Channel3** | Identifies unfamiliar products on a resident's list, and the operator's "Check with Channel3" sets each product's retail price from today's listings (lower median, outliers ignored) so "saved against retail" is measured against a real price (`lib/engine/retail.ts`) |
+| **Render** | `render.yaml` blueprint: web service and managed Postgres, health check that reaches the database, Deploy to Render button |
 | **APIMatic Context Plugin, PayPal AI Toolkit** | Used in Claude Code while building the PayPal integration |
 
 ## Run it locally

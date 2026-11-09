@@ -145,7 +145,7 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div className="font-medium">
                   {prod.title}
-                  {prod.brand ? ` (${prod.brand})` : ""} <span className="font-normal text-muted">{prod.packSize}. {p.demandEstimate} packs wanted, retail {fmt(prod.retailRefCents)}.</span>
+                  {prod.brand ? ` (${prod.brand})` : ""} <span className="font-normal text-muted">{prod.packSize}. {p.demandEstimate} packs wanted, retail {fmt(prod.retailRefCents)}{prod.retailSource === "channel3" ? " (Channel3)" : ""}.</span>
                 </div>
                 {p.status === "PRICED" && <span className="chip bg-brand-soft text-brand-dark">Winner picked</span>}
               </div>
