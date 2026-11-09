@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import { Grid, money } from "@/app/_components/Grid";
+import { Panel } from "@/app/_components/ui";
 
 type LedgerRow = { id: string; when: string; txn: string; account: string; seller: string; debit: number; credit: number; memo: string };
 type DecisionRow = { id: string; when: string; agent: string; model: string; input: string; output: string };
@@ -21,27 +22,32 @@ const ledgerCols: ColDef<LedgerRow>[] = [
 const decisionCols: ColDef<DecisionRow>[] = [
   { field: "when", valueFormatter: time, maxWidth: 190, sort: "desc" },
   { field: "agent", maxWidth: 170, valueFormatter: (p) => String(p.value).replaceAll("_", " ") },
-  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "var(--pc-accent-ink)", fontWeight: 400 } : { color: "var(--pc-brand)", fontWeight: 500 }) },
+  { field: "model", maxWidth: 150, cellStyle: (p) => (p.value === "rules" ? { color: "var(--pc-accent-ink)", fontWeight: 400 } : { color: "var(--pc-info)", fontWeight: 500 }) },
   { field: "input", maxWidth: 170 },
   { field: "output", headerName: "What it decided", minWidth: 360, tooltipField: "output" },
 ];
 
+const tabClass = (on: boolean) => `rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${on ? "bg-brand-soft text-brand-dark" : "text-muted hover:text-ink"}`;
+
 export function OpsGrids({ ledger, decisions }: { ledger: LedgerRow[]; decisions: DecisionRow[] }) {
   const [tab, setTab] = useState<"ledger" | "ai">("ledger");
   return (
-    <section className="card p-5">
-      <div className="mb-3 flex gap-2">
-        <button className={`btn ${tab === "ledger" ? "btn-primary" : "btn-ghost"}`} onClick={() => setTab("ledger")}>
-          Ledger ({ledger.length})
-        </button>
-        <button className={`btn ${tab === "ai" ? "btn-primary" : "btn-ghost"}`} onClick={() => setTab("ai")}>
-          AI decisions ({decisions.length})
-        </button>
-      </div>
-      {tab === "ledger" ? <Grid rows={ledger} cols={ledgerCols} height={380} getRowId={(r) => r.id} /> : <Grid rows={decisions} cols={decisionCols} height={380} getRowId={(r) => r.id} />}
-      <p className="mt-2 text-xs text-muted">
-        {tab === "ledger" ? "Every PayPal charge, fee, refund, commission and payout writes balanced debit and credit rows." : "Every AI decision is kept with the model that made it, or 'rules' when the fallback ran."}
-      </p>
-    </section>
+    <Panel
+      id="ledger"
+      title={tab === "ledger" ? "Ledger" : "AI decisions"}
+      description={tab === "ledger" ? "Every charge, fee, refund, commission and payout, as balanced debits and credits." : "Every AI decision with the model that made it, or rules when the fallback ran."}
+      aside={
+        <div className="flex gap-1 rounded-full border border-line p-1">
+          <button type="button" className={tabClass(tab === "ledger")} aria-pressed={tab === "ledger"} onClick={() => setTab("ledger")}>
+            Ledger <span className="num">{ledger.length}</span>
+          </button>
+          <button type="button" className={tabClass(tab === "ai")} aria-pressed={tab === "ai"} onClick={() => setTab("ai")}>
+            AI decisions <span className="num">{decisions.length}</span>
+          </button>
+        </div>
+      }
+    >
+      {tab === "ledger" ? <Grid rows={ledger} cols={ledgerCols} height={420} getRowId={(r) => r.id} /> : <Grid rows={decisions} cols={decisionCols} height={420} getRowId={(r) => r.id} />}
+    </Panel>
   );
 }
