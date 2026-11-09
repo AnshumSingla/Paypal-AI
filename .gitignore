@@ -20,3 +20,11 @@ brag-output/work/
 # Written by `next dev` for coding agents
 AGENTS.md
 CLAUDE.md
+
+# Demo video build intermediates (scripts, the mp4 and the poster are kept)
+brag-output/demo/frames/
+brag-output/demo/stills/
+brag-output/demo/shots/
+brag-output/demo/chrome-profile/
+brag-output/demo/music.wav
+brag-output/demo/video.html
