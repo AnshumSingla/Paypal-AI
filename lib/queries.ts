@@ -69,7 +69,8 @@ export async function basketView(db: DB, cycleId: string, householdId: string) {
   const issues = lines.length
     ? await db.select().from(s.issue).where(inArray(s.issue.basketLineId, lines.map((x) => x.l.id)))
     : [];
-  return { basket, lines, payments, issues };
+  const refunds = payments.length ? await db.select().from(s.refund).where(inArray(s.refund.paymentId, payments.map((p) => p.id))).orderBy(s.refund.createdAt) : [];
+  return { basket, lines, payments, issues, refunds };
 }
 
 export async function needsView(db: DB, cycleId: string, householdId: string) {

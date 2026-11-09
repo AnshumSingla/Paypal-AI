@@ -4,7 +4,7 @@ export function Kpi({ label, value, sub, accent }: { label: string; value: strin
   return (
     <div className={`card p-4 ${accent ? "!border-brand/30 !bg-brand-soft" : ""}`}>
       <div className="label">{label}</div>
-      <div className={`mt-1 text-2xl font-extrabold ${accent ? "text-brand-dark" : ""}`}>{value}</div>
+      <div className={`mt-1 text-2xl font-semibold ${accent ? "text-brand-dark" : ""}`}>{value}</div>
       {sub ? <div className="mt-0.5 text-xs text-muted">{sub}</div> : null}
     </div>
   );

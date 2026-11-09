@@ -5,7 +5,8 @@
 import { randomUUID } from "node:crypto";
 
 export type PayMode = "sandbox" | "mock";
-export const payMode = (): PayMode => (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? "sandbox" : "mock");
+// PAYPAL_MODE=mock forces the in-process mock even when keys are set (e.g. if a key breaks mid-demo).
+export const payMode = (): PayMode => (process.env.PAYPAL_MODE !== "mock" && process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? "sandbox" : "mock");
 
 export class PayPalError extends Error {
   constructor(
@@ -147,7 +148,7 @@ const sandbox: Gateway = {
   },
   async payout({ senderBatchId, items }) {
     const r = await call("POST", "/v1/payments/payouts", {
-      sender_batch_header: { sender_batch_id: senderBatchId, email_subject: "You have a PoolCart payout", email_message: "Thanks for delivering to Maple Heights." },
+      sender_batch_header: { sender_batch_id: senderBatchId, email_subject: "You have a Collective payout", email_message: "Thanks for delivering to Gulmohar Residency." },
       items: items.map((i) => ({ recipient_type: "EMAIL", receiver: i.receiver, amount: { currency: "USD", value: (i.cents / 100).toFixed(2) }, sender_item_id: i.senderItemId, note: i.note })),
     });
     return { batchId: r.batch_header.payout_batch_id, status: r.batch_header.batch_status };
@@ -244,5 +245,18 @@ const mock: Gateway = {
     return false;
   },
 };
+
+/** Mock mode only: rebuild orders, holds and captures from stored payments after a server restart,
+ *  so a week in progress still settles. Real PayPal keeps this state itself. */
+export function mockRestore(payments: { paypalOrderId: string | null; paypalAuthorizationId: string | null; paypalCaptureId: string | null; authorizedCents: number; capturedCents: number; refundedCents: number; status: string }[]) {
+  if (st.orders.size || st.auths.size) return; // process still running: memory is current
+  for (const p of payments) {
+    if (p.status === "CREATED" && p.paypalOrderId) st.orders.set(p.paypalOrderId, { cents: p.authorizedCents, approved: false });
+    if (!p.paypalAuthorizationId) continue;
+    const status: AuthStatus = p.status === "CAPTURED" ? "CAPTURED" : p.status === "VOIDED" ? "VOIDED" : "CREATED";
+    st.auths.set(p.paypalAuthorizationId, { id: p.paypalAuthorizationId, amount: p.authorizedCents, captured: p.capturedCents, status });
+    if (p.paypalCaptureId) st.captures.set(p.paypalCaptureId, { cents: p.capturedCents, refunded: p.refundedCents });
+  }
+}
 
 export const gateway = (): Gateway => (payMode() === "sandbox" ? sandbox : mock);

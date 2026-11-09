@@ -6,6 +6,7 @@ import { fmt } from "../util/money";
 import { gateway } from "../paypal/gateway";
 import { settlePool } from "./pricing";
 import { log, post } from "./ledger";
+import { recordTrust } from "./trust";
 
 export async function settleCycle(db: DB, cycleId: string, actor: string): Promise<string> {
   const gw = gateway();
@@ -42,7 +43,6 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
 
   // 2) Settle each priced pool with only valid holds.
   const pools = await db.select({ p: s.pool, b: s.bid, prod: s.product }).from(s.pool).innerJoin(s.bid, eq(s.pool.winningBidId, s.bid.id)).innerJoin(s.product, eq(s.pool.productId, s.product.id)).where(and(eq(s.pool.cycleId, cycleId), eq(s.pool.status, "PRICED")));
-  const lineSeller = new Map<string, string>();
   let succeeded = 0;
   let failed = 0;
   for (const { p, b, prod } of pools) {
@@ -57,7 +57,6 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
       succeeded++;
       await db.update(s.basketLine).set({ status: "won", finalUnitCents: out.finalUnitCents }).where(inArray(s.basketLine.id, out.kept));
       await db.update(s.pool).set({ status: "SUCCEEDED", finalUnitCents: out.finalUnitCents, keptQty: out.keptQty }).where(eq(s.pool.id, p.id));
-      out.kept.forEach((id) => lineSeller.set(id, b.sellerId));
       await log(db, cycleId, "settlement", "money", `${prod.title}: ${out.keptQty} packs reached ${fmt(out.finalUnitCents)}/pack (ceiling was ${fmt(b.tiers[0].unitCents)}).`);
     } else {
       failed++;
@@ -66,7 +65,7 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
     }
   }
 
-  // 3) One capture (or void) per held basket.
+  // 3) One capture (or void) per held basket. A failure on one basket never blocks the others.
   let capturedTotal = 0;
   let heldTotal = 0;
   let voided = 0;
@@ -74,35 +73,51 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
     const pay = payments.get(b.id);
     if (!pay) continue;
     heldTotal += pay.authorizedCents;
-    const won = await db.select().from(s.basketLine).where(and(eq(s.basketLine.basketId, b.id), eq(s.basketLine.status, "won")));
-    const total = won.reduce((sum, l) => sum + l.qty * (l.finalUnitCents ?? 0), 0);
-    if (total > pay.authorizedCents) throw new Error(`Invariant violated: capture ${total} > hold ${pay.authorizedCents} for basket ${b.id}`); // Policies §1.3
+    // Seller comes from the DB (not this run's memory) so a re-run after a partial failure is correct.
+    const won = await db
+      .select({ l: s.basketLine, sellerId: s.bid.sellerId })
+      .from(s.basketLine)
+      .innerJoin(s.pool, eq(s.basketLine.poolId, s.pool.id))
+      .innerJoin(s.bid, eq(s.pool.winningBidId, s.bid.id))
+      .where(and(eq(s.basketLine.basketId, b.id), eq(s.basketLine.status, "won")));
+    const total = won.reduce((sum, { l }) => sum + l.qty * (l.finalUnitCents ?? 0), 0);
     if (total === 0) {
-      await gw.voidAuthorization(pay.paypalAuthorizationId!);
-      await db.update(s.payment).set({ status: "VOIDED" }).where(eq(s.payment.id, pay.id));
-      await db.update(s.basket).set({ status: "RELEASED" }).where(eq(s.basket.id, b.id));
-      voided++;
+      try {
+        await gw.voidAuthorization(pay.paypalAuthorizationId!);
+        await db.update(s.payment).set({ status: "VOIDED" }).where(eq(s.payment.id, pay.id));
+        await db.update(s.basket).set({ status: "RELEASED" }).where(eq(s.basket.id, b.id));
+        voided++;
+      } catch (e) {
+        console.error(`[settlement] void failed for ${b.id}`, e);
+        await log(db, cycleId, "settlement", "money", `Couldn't release one unused hold right away; nothing was charged and PayPal expires it automatically. (${e instanceof Error ? e.message : e})`);
+      }
       continue;
     }
     try {
+      if (total > pay.authorizedCents) throw new Error(`Invariant violated: capture ${total} > hold ${pay.authorizedCents} for basket ${b.id}`); // Policies §1.3
       const cap = await gw.capture({ authorizationId: pay.paypalAuthorizationId!, cents: total, finalCapture: true, invoiceId: `${b.id}-${cycleId}` });
       capturedTotal += total;
-      await db.update(s.payment).set({ status: "CAPTURED", paypalCaptureId: cap.captureId, capturedCents: total, paypalFeeCents: cap.feeCents }).where(eq(s.payment.id, pay.id));
-      await db.update(s.basket).set({ status: "CAPTURED", capturedCents: total }).where(eq(s.basket.id, b.id));
       const perSeller = new Map<string, number>();
-      for (const l of won) perSeller.set(lineSeller.get(l.id)!, (perSeller.get(lineSeller.get(l.id)!) ?? 0) + l.qty * l.finalUnitCents!);
-      await post(db, {
-        cycleId,
-        memo: `Capture ${b.id}`,
-        refType: "payment",
-        refId: pay.id,
-        legs: [{ account: "paypal_clearing", debit: total }, ...[...perSeller].map(([sellerId, cents]) => ({ account: "seller_payable" as const, credit: cents, sellerId }))],
+      for (const { l, sellerId } of won) perSeller.set(sellerId, (perSeller.get(sellerId) ?? 0) + l.qty * l.finalUnitCents!);
+      // Record the capture atomically: a crash halfway must not leave a paid basket looking unpaid.
+      await db.transaction(async (tx) => {
+        await tx.update(s.payment).set({ status: "CAPTURED", paypalCaptureId: cap.captureId, capturedCents: total, paypalFeeCents: cap.feeCents }).where(eq(s.payment.id, pay.id));
+        await tx.update(s.basket).set({ status: "CAPTURED", capturedCents: total }).where(eq(s.basket.id, b.id));
+        await post(tx, {
+          cycleId,
+          memo: `Capture ${b.id}`,
+          refType: "payment",
+          refId: pay.id,
+          legs: [{ account: "paypal_clearing", debit: total }, ...[...perSeller].map(([sellerId, cents]) => ({ account: "seller_payable" as const, credit: cents, sellerId }))],
+        });
+        if (cap.feeCents) await post(tx, { cycleId, memo: `PayPal fee ${b.id}`, refType: "payment", refId: pay.id, legs: [{ account: "platform_expense", debit: cap.feeCents }, { account: "paypal_clearing", credit: cap.feeCents }] });
+        await recordTrust(tx, { subjectType: "household", subjectId: b.householdId, cycleId, kind: "commitment_kept", refId: pay.id });
       });
-      if (cap.feeCents) await post(db, { cycleId, memo: `PayPal fee ${b.id}`, refType: "payment", refId: pay.id, legs: [{ account: "platform_expense", debit: cap.feeCents }, { account: "paypal_clearing", credit: cap.feeCents }] });
     } catch (e) {
       console.error(`[settlement] capture failed for ${b.id}`, e);
       await db.update(s.basket).set({ status: "PAYMENT_FAILED" }).where(eq(s.basket.id, b.id));
       await db.update(s.basketLine).set({ status: "released" }).where(eq(s.basketLine.basketId, b.id));
+      await recordTrust(db, { subjectType: "household", subjectId: b.householdId, cycleId, kind: "payment_failed", refId: pay.id });
       await log(db, cycleId, "settlement", "money", `Capture failed for one basket; its items were released. (${e instanceof Error ? e.message : e})`);
     }
   }

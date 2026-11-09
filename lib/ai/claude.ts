@@ -8,7 +8,19 @@ import type { DB } from "../db";
 import { aiDecision } from "../db/schema";
 import { newId } from "../util/ids";
 
-export const aiEnabled = () => Boolean(process.env.ANTHROPIC_API_KEY);
+// A public demo must not run up the Claude bill: after AI_CALLS_PER_HOUR calls in an hour (default
+// 300), AI turns off and every agent uses its rule-based fallback until the hour rolls over.
+const g = globalThis as unknown as { __poolcartAiBudget?: { start: number; used: number } };
+const budget = (g.__poolcartAiBudget ??= { start: Date.now(), used: 0 });
+function budgetLeft() {
+  if (Date.now() - budget.start > 3600_000) Object.assign(budget, { start: Date.now(), used: 0 });
+  return budget.used < Number(process.env.AI_CALLS_PER_HOUR || 300);
+}
+/** Count one AI call against the hourly budget. */
+export const spendAiCall = () => void budget.used++;
+
+// AI_MODE=rules forces the rule-based fallbacks even when a key is set.
+export const aiEnabled = () => process.env.AI_MODE !== "rules" && Boolean(process.env.ANTHROPIC_API_KEY) && budgetLeft();
 export const aiModel = () => process.env.CLAUDE_MODEL || "claude-opus-5-5";
 
 let client: Anthropic | null = null;
@@ -46,6 +58,7 @@ export async function runAgent<T>(
   let result: { data: T; model: string; source: "ai" | "rules"; error?: string };
   if (ai && aiEnabled()) {
     try {
+      spendAiCall();
       const r = await ai();
       result = { ...r, source: "ai" };
     } catch (e) {

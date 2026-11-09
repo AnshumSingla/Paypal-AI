@@ -18,6 +18,7 @@ import { parseBasket, type BasketLineDraft } from "@/lib/ai/agents/basket";
 import { suggestTiers } from "@/lib/ai/agents/sellerSide";
 import { log } from "@/lib/engine/ledger";
 import { activateSubscription } from "@/lib/paypal/subscriptions";
+import { runSecretary } from "@/lib/ai/secretary";
 
 export type ActionResult<T = undefined> = { ok: true; message?: string; data?: T } | { ok: false; error: string };
 
@@ -169,7 +170,7 @@ export async function reportIssueAction(input: { basketLineId: string; type: "mi
   return guard(async () => {
     const { db, household, user } = await require(["resident", "captain"]);
     const r = await reportIssue(db, { ...input, householdId: household!.id, actor: user.name });
-    return { message: r.decision === "auto_approved" ? `Refund of $${(r.refundCents / 100).toFixed(2)} approved automatically and sent to your PayPal.` : `Reported. The captain will review a proposed refund of $${(r.refundCents / 100).toFixed(2)}.` };
+    return { message: r.decision === "auto_approved" ? `The Society Secretary refunded $${(r.refundCents / 100).toFixed(2)} to your PayPal.` : `Reported. The Secretary passed it to the captain: ${r.secretary}` };
   });
 }
 
@@ -194,6 +195,28 @@ export async function decideIssueAction(issueId: string, approve: boolean, amoun
     const { db, user } = await require(["captain", "operator"]);
     await decideIssue(db, issueId, approve, user.name, amountCents);
     return { message: approve ? "Refund sent via PayPal." : "Issue rejected." };
+  });
+}
+
+// ---------------------------------------------------------------- Society Secretary
+/** Ask the Secretary a question. Its tools are scoped to the asker's role. */
+export async function askSecretaryAction(cycleId: string, question: string) {
+  return guard<{ reply: string; source: "ai" | "rules" }>(async () => {
+    const { db, user, household, seller } = await require(["resident", "captain", "seller", "operator"]);
+    if (!question.trim()) throw new PolicyError("Type a question first.");
+    if (question.length > 1000) throw new PolicyError("Please keep questions under 1,000 characters.");
+    const role = user.role === "operator" ? "captain" : user.role;
+    const r = await runSecretary(db, { cycleId, role, householdId: household?.id, sellerId: seller?.id, task: { kind: "ask", question } });
+    return { data: { reply: r.reply, source: r.source } };
+  });
+}
+
+/** Captain: let the Secretary put the authorized money on the table and ask suppliers for deeper tiers. */
+export async function fundedAsksAction(cycleId: string) {
+  return guard(async () => {
+    const { db } = demoMode() ? await getSession() : await require(["captain", "operator"]);
+    const r = await runSecretary(db, { cycleId, role: "system", task: { kind: "funded_asks" } });
+    return { message: r.reply };
   });
 }
 

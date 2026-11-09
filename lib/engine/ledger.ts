@@ -1,13 +1,13 @@
 // Double-entry ledger (Architecture §7). Every money event writes balanced rows under one txn id.
 import { sql } from "drizzle-orm";
-import type { DB } from "../db";
+import type { DB, Tx } from "../db";
 import { activity, ledgerEntry } from "../db/schema";
 import { newId } from "../util/ids";
 
 type Account = (typeof ledgerEntry.$inferInsert)["account"];
 export type Leg = { account: Account; debit?: number; credit?: number; sellerId?: string | null };
 
-export async function post(db: DB, a: { cycleId: string | null; memo: string; refType: string; refId: string; legs: Leg[] }) {
+export async function post(db: DB | Tx, a: { cycleId: string | null; memo: string; refType: string; refId: string; legs: Leg[] }) {
   const legs = a.legs.filter((l) => (l.debit ?? 0) !== 0 || (l.credit ?? 0) !== 0);
   const dr = legs.reduce((s, l) => s + (l.debit ?? 0), 0);
   const cr = legs.reduce((s, l) => s + (l.credit ?? 0), 0);

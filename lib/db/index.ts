@@ -42,6 +42,7 @@ export function getDb(): Promise<DB> {
     .then(async (db) => {
       const { ensureSeeded } = await import("./seed");
       await ensureSeeded(db);
+      await restoreMockPayPal(db);
       return db;
     })
     .catch((e) => {
@@ -49,6 +50,26 @@ export function getDb(): Promise<DB> {
       throw e;
     });
   return g.__poolcartDb!.db;
+}
+
+/** In mock PayPal mode, holds live in memory while the DB persists; rebuild them after a restart. */
+export async function restoreMockPayPal(db: DB) {
+  const { payMode, mockRestore } = await import("../paypal/gateway");
+  if (payMode() !== "mock") return;
+  const { sql } = await import("drizzle-orm");
+  const p = schema.payment;
+  const rows = await db
+    .select({
+      paypalOrderId: p.paypalOrderId,
+      paypalAuthorizationId: p.paypalAuthorizationId,
+      paypalCaptureId: p.paypalCaptureId,
+      authorizedCents: p.authorizedCents,
+      capturedCents: p.capturedCents,
+      status: p.status,
+      refundedCents: sql<number>`coalesce((select sum(${schema.refund.amountCents}) from ${schema.refund} where ${schema.refund.paymentId} = ${p.id}), 0)::int`,
+    })
+    .from(p);
+  mockRestore(rows);
 }
 
 /** For tests: a fresh in-memory database with the schema applied (not seeded). */

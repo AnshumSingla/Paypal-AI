@@ -8,6 +8,7 @@ import { gateway } from "../paypal/gateway";
 import { assessIssue } from "../ai/agents/issue";
 import { AUTO_REFUND_LIMIT_CENTS, PolicyError } from "./pricing";
 import { log, post } from "./ledger";
+import { recordTrust } from "./trust";
 
 const ISSUE_WINDOW_MS = 24 * 3600 * 1000;
 
@@ -58,19 +59,47 @@ export async function reportIssue(db: DB, a: { basketLineId: string; householdId
   });
   await log(db, ctx.c.id, a.actor, "issue", `Issue reported on ${ctx.prod.title}: ${a.type.replace("_", " ")}. ${assessment.source === "ai" ? "AI" : "Rules"} proposes ${fmt(proposed)}.`);
 
-  // Auto-approve small, plausible claims for households without many recent auto-approvals (Policies §8.3).
+  // The Society Secretary decides: refund within the limits below, or escalate to the captain.
+  const { secretaryDecideIssue } = await import("../ai/secretary"); // dynamic: secretary imports this file
+  const outcome = await secretaryDecideIssue(db, ctx.c.id, issueId);
+  return { issueId, decision: outcome.refunded ? ("auto_approved" as const) : ("pending" as const), refundCents: outcome.refunded || proposed, assessment, secretary: outcome.reply };
+}
+
+/**
+ * Pure: may an agent refund this without a human (Policies §8.3)? Returns the reason it may not,
+ * or null. At most $10, never more than was charged for the line, one refund per issue, and no more
+ * than 3 automatic refunds per household in 30 days.
+ */
+export function agentRefundProblem(a: { cents: number; remainingCents: number; recentAutoApprovals: number; decision: string }): string | null {
+  if (a.decision !== "pending") return "This issue was already decided.";
+  if (!Number.isInteger(a.cents) || a.cents <= 0) return "Refund must be a positive amount in cents.";
+  if (a.cents > a.remainingCents) return `That's more than the ${fmt(a.remainingCents)} charged for this item.`;
+  if (a.cents > AUTO_REFUND_LIMIT_CENTS) return `Automatic refunds stop at ${fmt(AUTO_REFUND_LIMIT_CENTS)}; the captain decides larger ones.`;
+  if (a.recentAutoApprovals >= 3) return "This household already had 3 automatic refunds in 30 days; the captain decides.";
+  return null;
+}
+
+/** What the limits allow for one issue, for the Secretary's tools and playbook. */
+export async function issueForAgent(db: DB, issueId: string) {
+  const [iss] = await db.select().from(s.issue).where(eq(s.issue.id, issueId));
+  if (!iss) throw new PolicyError("Issue not found.");
+  const ctx = await lineContext(db, iss.basketLineId);
   const recent = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(s.issue)
     .innerJoin(s.basketLine, eq(s.issue.basketLineId, s.basketLine.id))
     .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
-    .where(and(eq(s.basket.householdId, a.householdId), eq(s.issue.decision, "auto_approved"), gte(s.issue.createdAt, new Date(Date.now() - 30 * 24 * 3600 * 1000))));
-  const plausible = assessment.classification !== "not_an_issue" && assessment.confidence !== "low";
-  if (proposed > 0 && proposed <= AUTO_REFUND_LIMIT_CENTS && recent[0].n < 3 && plausible) {
-    await executeRefund(db, issueId, proposed, "auto_approved", "policy (auto ≤ $10)");
-    return { issueId, decision: "auto_approved" as const, refundCents: proposed, assessment };
-  }
-  return { issueId, decision: "pending" as const, refundCents: proposed, assessment };
+    .where(and(eq(s.basket.householdId, ctx.bk.householdId), eq(s.issue.decision, "auto_approved"), gte(s.issue.createdAt, new Date(Date.now() - 30 * 24 * 3600 * 1000))));
+  return { iss, ctx, remainingCents: ctx.l.qty * ctx.l.finalUnitCents! - ctx.l.refundedCents, recentAutoApprovals: recent[0].n };
+}
+
+/** The only refund path an agent has. Code checks the limits; PayPal moves the money. */
+export async function agentRefund(db: DB, issueId: string, cents: number, actor: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { iss, remainingCents, recentAutoApprovals } = await issueForAgent(db, issueId);
+  const problem = agentRefundProblem({ cents, remainingCents, recentAutoApprovals, decision: iss.decision });
+  if (problem) return { ok: false, reason: problem };
+  await executeRefund(db, issueId, cents, "auto_approved", actor);
+  return { ok: true };
 }
 
 export async function decideIssue(db: DB, issueId: string, approve: boolean, actor: string, amountCents?: number) {
@@ -79,6 +108,7 @@ export async function decideIssue(db: DB, issueId: string, approve: boolean, act
   if (!approve) {
     await db.update(s.issue).set({ decision: "rejected", decidedBy: actor, refundCents: 0 }).where(eq(s.issue.id, issueId));
     const ctx = await lineContext(db, iss.basketLineId);
+    await recordTrust(db, { subjectType: "household", subjectId: ctx.bk.householdId, cycleId: ctx.c.id, kind: "claim_rejected", refId: issueId });
     await log(db, ctx.c.id, actor, "issue", `Issue on ${ctx.prod.title} rejected.`);
     return;
   }
@@ -98,6 +128,7 @@ async function executeRefund(db: DB, issueId: string, cents: number, decision: "
   const bkRefunded = ctx.bk.refundedCents + cents;
   await db.update(s.basket).set({ refundedCents: bkRefunded, status: bkRefunded >= ctx.bk.capturedCents ? "REFUNDED" : "PARTIALLY_REFUNDED" }).where(eq(s.basket.id, ctx.bk.id));
   await db.update(s.issue).set({ decision, decidedBy: actor, refundCents: cents }).where(eq(s.issue.id, issueId));
+  await recordTrust(db, { subjectType: "seller", subjectId: ctx.bid.sellerId, cycleId: ctx.c.id, kind: "issue_upheld", refId: issueId, note: iss.type });
   await post(db, { cycleId: ctx.c.id, memo: `Refund ${issueId}`, refType: "refund", refId: issueId, legs: [{ account: "seller_payable", debit: cents, sellerId: ctx.bid.sellerId }, { account: "paypal_clearing", credit: cents }] });
   // Refund after the seller was already paid → carried as a negative balance (Policies §8.5).
   if (ctx.c.phase === "CLOSED") await db.update(s.seller).set({ balanceCents: sql`${s.seller.balanceCents} - ${cents}` }).where(eq(s.seller.id, ctx.bid.sellerId));

@@ -5,7 +5,9 @@ import { getSession } from "@/lib/session";
 import * as s from "@/lib/db/schema";
 import { activityFeed, cycleMoney, poolsView, societyContext } from "@/lib/queries";
 import { fmt } from "@/lib/util/money";
-import { advancePhase, decideIssueAction, pickWinnerAction } from "@/app/actions";
+import { advancePhase, decideIssueAction, fundedAsksAction, pickWinnerAction } from "@/app/actions";
+import { SecretaryPanel } from "@/app/_components/SecretaryPanel";
+import { trustScores } from "@/lib/engine/trust";
 import { CycleBar } from "@/app/_components/CycleBar";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { ActivityFeed, Kpi } from "@/app/_components/Bits";
@@ -43,7 +45,7 @@ export default async function CaptainPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
       <div className="min-w-0">
-        <CycleBar cycle={cycle} societyName={`${society.name} · Captain console`} />
+        <CycleBar cycle={cycle} societyName={`${society.name}, captain console`} />
         <div className="mb-6 grid gap-3 sm:grid-cols-4">
           <Kpi label="Households with needs" value={String(needStats.households)} sub={`${needStats.packs} packs requested${needStats.photo ? ` · ${needStats.photo} from photos` : ""}`} />
           <Kpi label="Pools" value={String(pools.length)} sub={`${pools.filter((p) => ["PRICED", "SUCCEEDED", "DELIVERED"].includes(p.status)).length} priced`} />
@@ -53,21 +55,33 @@ export default async function CaptainPage() {
 
         <section className="card mb-6 p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-extrabold">Demand board</h2>
+            <h2 className="text-lg font-semibold">Demand board</h2>
             <span className="chip bg-info-soft text-info">AG Grid · Pool Builder AI notes</span>
           </div>
           {pools.length ? <PoolGrid rows={gridRows} /> : <CollectPreview db={db} cycleId={cycle.id} />}
         </section>
 
         {cycle.phase === "BID" && <BidReview db={db} cycleId={cycle.id} />}
+        {cycle.phase === "COMMIT" && (
+          <section className="card p-5">
+            <h2 className="text-lg font-semibold">Money on the table</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted">
+              {money.holders} households have {fmt(money.activeHolds)} authorized in PayPal right now. The Secretary can take that to the winning suppliers and ask for a lower price at today&apos;s quantity. Prices can only go down, so every hold still covers the final charge.
+            </p>
+            <div className="mt-4">
+              <ActionButton action={fundedAsksAction.bind(null, cycle.id)}>Ask suppliers for a better price</ActionButton>
+            </div>
+          </section>
+        )}
         {cycle.phase === "FULFIL" && <DropManifest db={db} cycleId={cycle.id} cycleIdForAdvance={cycle.id} />}
         {["RESOLVE", "CLOSED"].includes(cycle.phase) && <IssuesQueue db={db} cycleId={cycle.id} />}
       </div>
       <aside className="space-y-4">
+        <SecretaryPanel db={db} cycleId={cycle.id} role="captain" />
         <ActivityFeed items={feed} />
-        <div className="card p-4 text-xs text-muted">
-          <div className="label mb-1">Captain powers</div>
-          Approve winning bids (or let auto-select pick the top-ranked unflagged bid), confirm the drop, decide refunds above $10. You never see anyone&apos;s payment details (Policies §12.3).
+        <div className="card p-4 text-sm text-muted">
+          <h3 className="mb-1 font-medium text-ink">What you decide</h3>
+          Winning bids (or let auto-select take the top-ranked one), the handover, and any refund over $10. You never see anyone&apos;s payment details.
         </div>
       </aside>
     </div>
@@ -107,13 +121,14 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
     .from(s.bid)
     .innerJoin(s.seller, eq(s.bid.sellerId, s.seller.id))
     .where(and(inArray(s.bid.poolId, pools.map((p) => p.p.id).concat("-")), inArray(s.bid.status, ["submitted", "won"])));
+  const trust = await trustScores(db, "seller", [...new Set(bids.map((x) => x.sel.id))]);
   return (
     <section className="card p-5">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">Bids to review</h2>
-        <span className="chip bg-info-soft text-info">Bid Analyst · AI</span>
+        <h2 className="text-lg font-semibold">Bids to review</h2>
+        <span className="chip bg-info-soft text-info">Ranked by code, explained by AI</span>
       </div>
-      <p className="mb-4 text-sm text-muted">Scores are computed from price at today&apos;s demand, seller reliability and whether the MOQ is reachable. The AI explains each one; you decide. Unpicked pools are auto-selected at the deadline.</p>
+      <p className="mb-4 max-w-3xl text-sm text-muted">Each score weighs price at today&apos;s demand (40), the supplier&apos;s trust from verified deliveries and upheld complaints (45), and whether the minimum order is reachable (15). The cheapest bid doesn&apos;t win by default. You decide; unpicked pools go to the top score at the deadline.</p>
       <div className="space-y-4">
         {pools.map(({ p, prod }) => {
           const pb = bids.filter((x) => x.b.poolId === p.id).sort((x, y) => (y.b.aiScore ?? 0) - (x.b.aiScore ?? 0));
@@ -127,7 +142,7 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
                 {p.status === "PRICED" && <span className="chip bg-brand-soft text-brand-dark">Winner picked</span>}
               </div>
               {p.aiNotes && <p className="mt-1 text-xs text-muted">Pool Builder: {p.aiNotes}</p>}
-              {p.aiRecommendation && <p className="mt-1 text-xs font-semibold text-info">Bid Analyst: {p.aiRecommendation}</p>}
+              {p.aiRecommendation && <p className="mt-1 text-sm font-medium text-brand">{p.aiRecommendation}</p>}
               {!pb.length ? (
                 <p className="mt-2 text-sm text-muted">No bids yet.</p>
               ) : (
@@ -138,13 +153,13 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
                         <b>{sel.businessName}</b>
                         <span className="chip bg-canvas">score {b.aiScore ?? "—"}</span>
                       </div>
-                      <div className="mt-1 text-xs text-muted">
-                        MOQ {b.moq} · cap {b.maxCapacity} · {b.tiers.map((t) => `${t.minQty}+ ${fmt(t.unitCents)}`).join(" · ")} · {b.deliveryWindow} · {sel.rating / 10}★
+                      <div className="num mt-1 text-xs text-muted">
+                        Trust {trust.get(sel.id)}/100. Minimum {b.moq}, capacity {b.maxCapacity}. {b.tiers.map((t) => `${t.minQty}+ at ${fmt(t.unitCents)}`).join(", ")}. {b.deliveryWindow}.
                       </div>
                       {b.aiRationale && <p className="mt-1 text-xs">{b.aiRationale}</p>}
                       {(b.aiFlags ?? []).map((f) => (
                         <p key={f} className="mt-1 text-xs text-danger">
-                          ⚠ {f}
+                          {f}
                         </p>
                       ))}
                       {p.status === "OPEN_FOR_BIDS" && (
@@ -185,7 +200,7 @@ async function DropManifest({ db, cycleId, cycleIdForAdvance }: { db: Awaited<Re
   return (
     <section className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-extrabold">Drop manifest &amp; packing list</h2>
+        <h2 className="text-lg font-semibold">Drop manifest &amp; packing list</h2>
         <ActionButton action={advancePhase.bind(null, cycleIdForAdvance)} confirm="Confirm the sellers' drop matched the manifest? This opens the 24h issue window.">
           Confirm handover
         </ActionButton>
@@ -232,7 +247,7 @@ async function IssuesQueue({ db, cycleId }: { db: Awaited<ReturnType<typeof getS
   return (
     <section className="card p-5">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">Issues</h2>
+        <h2 className="text-lg font-semibold">Issues</h2>
         <span className="chip bg-info-soft text-info">Issue Resolver · AI</span>
       </div>
       {!issues.length ? (

@@ -39,7 +39,7 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">What do you need this week?</h2>
+        <h2 className="text-lg font-semibold">What do you need this week?</h2>
         <span className="chip bg-info-soft text-info">Basket Assistant · AI</span>
       </div>
       {!lines ? (

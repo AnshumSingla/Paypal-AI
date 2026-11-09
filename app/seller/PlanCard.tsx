@@ -19,7 +19,7 @@ export function PlanCard({ current, mode, clientId, planIds }: { current: string
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">Your plan</h2>
+        <h2 className="text-lg font-semibold">Your plan</h2>
         <span className="chip bg-info-soft text-info">PayPal Subscriptions</span>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -29,7 +29,7 @@ export function PlanCard({ current, mode, clientId, planIds }: { current: string
               <b>{p.name}</b>
               <span>{p.price}</span>
             </div>
-            <div className="text-xl font-extrabold">{p.commission}</div>
+            <div className="text-xl font-semibold">{p.commission}</div>
             <div className="text-xs text-muted">commission · {p.perks}</div>
             {current === p.id ? (
               <span className="chip mt-2 bg-brand text-white">Current</span>

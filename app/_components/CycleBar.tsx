@@ -6,11 +6,11 @@ import { advancePhase, nextCycleAction, resetDemoAction, simulateBidsAction, sim
 import { ActionButton } from "./ActionButton";
 
 const NEXT_LABEL: Record<string, string> = {
-  COLLECT: "Close collection → open bidding",
-  BID: "Close bidding → residents confirm",
-  COMMIT: "Cutoff → settle with PayPal",
+  COLLECT: "Close collection and open bidding",
+  BID: "Close bidding",
+  COMMIT: "Cut off and charge with PayPal",
   FULFIL: "Confirm handover",
-  RESOLVE: "Close issue window → pay sellers",
+  RESOLVE: "Close issue window and pay suppliers",
 };
 
 export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferSelect; societyName: string }) {
@@ -20,13 +20,13 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
         <div>
           <div className="label">{societyName}</div>
-          <h1 className="text-xl font-extrabold">
+          <h1 className="text-xl font-semibold">
             {cycle.weekLabel} · <span className="text-brand">{PHASE_LABEL[cycle.phase]}</span>
           </h1>
         </div>
         {demoMode() && (
-          <div className="flex flex-wrap items-start gap-2 rounded-xl bg-accent-soft px-3 py-2">
-            <span className="label self-center !text-[#8a5a12]">Demo clock</span>
+          <div className="flex flex-wrap items-start gap-2 rounded-xl border border-line bg-canvas px-3 py-2">
+            <span className="label self-center">Demo controls</span>
             {cycle.phase !== "CLOSED" ? (
               <ActionButton action={advancePhase.bind(null, cycle.id)} className="btn btn-primary !py-1.5">
                 {NEXT_LABEL[cycle.phase]}
@@ -38,12 +38,12 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
             )}
             {cycle.phase === "BID" && (
               <ActionButton action={simulateBidsAction.bind(null, cycle.id)} className="btn btn-ghost !py-1.5 bg-white">
-                + Competing seller bids
+                Add competing suppliers
               </ActionButton>
             )}
             {cycle.phase === "COMMIT" && (
               <ActionButton action={simulateNeighboursAction.bind(null, cycle.id, 12)} className="btn btn-ghost !py-1.5 bg-white">
-                + 12 neighbours confirm
+                12 more flats confirm
               </ActionButton>
             )}
             <ActionButton action={resetDemoAction} className="btn btn-ghost !py-1.5 bg-white" confirm="Reset all demo data back to the start of Week 46?">

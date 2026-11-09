@@ -48,7 +48,7 @@ export default async function OpsPage() {
 
         <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
           <div>
-            <h2 className="text-lg font-extrabold">AG Studio analytics</h2>
+            <h2 className="text-lg font-semibold">AG Studio analytics</h2>
             <p className="text-sm text-muted">Savings, pool success, PayPal holds vs captures and seller payouts, with a Claude-powered analyst that can build widgets.</p>
           </div>
           <Link href="/ops/dashboard" className="btn btn-primary">
@@ -62,7 +62,7 @@ export default async function OpsPage() {
         />
 
         <section className="card p-5">
-          <h2 className="text-lg font-extrabold">Sellers</h2>
+          <h2 className="text-lg font-semibold">Sellers</h2>
           <table className="mt-3 w-full text-sm">
             <thead className="text-left text-xs text-muted">
               <tr>

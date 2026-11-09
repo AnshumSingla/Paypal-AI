@@ -13,7 +13,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/captain", label: "Captain console" },
     { href: "/resident", label: "My basket" },
   ],
-  seller: [{ href: "/seller", label: "Seller portal" }],
+  seller: [{ href: "/seller", label: "Supplier portal" }],
   operator: [
     { href: "/ops", label: "Operations" },
     { href: "/ops/dashboard", label: "AG Studio dashboard" },
@@ -25,15 +25,15 @@ export async function Header() {
   const personas = await db.select({ id: s.appUser.id, name: s.appUser.name, role: s.appUser.role }).from(s.appUser).where(eq(s.appUser.isPersona, true));
   const mode = payMode();
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2.5">
           <Logo />
-          <span className="text-lg font-extrabold tracking-tight">PoolCart</span>
+          <span className="text-lg font-semibold tracking-tight">Collective</span>
         </Link>
         <nav className="flex gap-1">
           {(user ? NAV[user.role] : []).map((n) => (
-            <Link key={n.href} href={n.href} className="rounded-lg px-3 py-1.5 text-sm font-semibold text-muted hover:bg-brand-soft hover:text-ink">
+            <Link key={n.href} href={n.href} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted hover:bg-brand-soft hover:text-ink">
               {n.label}
             </Link>
           ))}
@@ -55,13 +55,15 @@ export async function Header() {
   );
 }
 
-export function Logo({ size = 28 }: { size?: number }) {
+/** A building's grid of flats; the lit ones have joined this week's order. */
+export function Logo({ size = 26 }: { size?: number }) {
+  const lit = new Set([0, 2, 3, 4, 5, 7, 8]);
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="9" fill="var(--pc-brand)" />
-      <circle cx="11" cy="13" r="4" fill="#fff" />
-      <circle cx="21" cy="13" r="4" fill="#fff" opacity=".75" />
-      <path d="M7 21h18l-2 5H9z" fill="var(--pc-accent)" />
+    <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden>
+      <rect width="26" height="26" rx="7" fill="var(--pc-brand)" />
+      {Array.from({ length: 9 }, (_, i) => (
+        <rect key={i} x={6 + (i % 3) * 5} y={6 + Math.floor(i / 3) * 5} width="3.2" height="3.2" rx="0.8" fill="#fff" opacity={lit.has(i) ? 1 : 0.35} />
+      ))}
     </svg>
   );
 }

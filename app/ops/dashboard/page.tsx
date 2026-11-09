@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-extrabold">PoolCart analytics</h1>
+        <h1 className="text-xl font-semibold">PoolCart analytics</h1>
         <span className="text-xs text-muted">
           AG Studio · {data.lines.length} basket lines · {data.payments.length} PayPal payments · {aiEnabled() ? "AI analyst: Claude (open the AI panel)" : "add ANTHROPIC_API_KEY to enable the AI analyst"}
         </span>

@@ -3,7 +3,7 @@
 // (build widgets, query data) run in the browser; this route only does the model call.
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgLlmRequest } from "ag-studio";
-import { aiEnabled, aiModel } from "@/lib/ai/claude";
+import { aiEnabled, aiModel, spendAiCall } from "@/lib/ai/claude";
 
 type Block = Anthropic.Beta.Messages.BetaContentBlockParam;
 type Msg = { role: "user" | "assistant"; content: Block[] };
@@ -63,7 +63,8 @@ function toMessages(req: AgLlmRequest) {
 }
 
 export async function POST(request: Request) {
-  if (!aiEnabled()) return Response.json({ error: { code: "ai_disabled", message: "Set ANTHROPIC_API_KEY to use the AI analyst." } }, { status: 503 });
+  if (!aiEnabled()) return Response.json({ error: { code: "ai_disabled", message: "The AI analyst is off: no API key, or this hour's demo budget is used up." } }, { status: 503 });
+  spendAiCall();
   const req = (await request.json()) as AgLlmRequest;
   const { system, messages } = toMessages(req);
   const tools = (req.tools ?? [])
