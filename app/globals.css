@@ -1,108 +1,119 @@
 @import "tailwindcss";
 
-/* Collective design tokens: calm, and close to PayPal. Navy ink, PayPal blue as the one accent,
-   cool grey paper. Amber is kept only for "waiting" states, green for done, red for problems.
-   AG Grid, AG Studio and the Bryntum timeline read these too. */
+/* Collective design tokens. Six colours drawn from PayPal, each with one job:
+   blue = PayPal actions and money moving, sky = the AI Secretary, gold = money saved and waiting,
+   mint = done, coral = problems, navy = ink. Depth comes from hairlines, not shadows.
+   AG Grid, AG Studio and the Bryntum timeline read these variables too. */
 :root {
-  --pc-ink: #0b1b33;
-  --pc-muted: #53627a;
-  --pc-canvas: #f5f7fa;
+  --pc-ink: #0a2540;
+  --pc-muted: #425466;
+  --pc-subtle: #8898aa;
+  --pc-canvas: #f6f9fc;
   --pc-surface: #ffffff;
-  --pc-border: #dfe5ec;
-  --pc-brand: #0059c9;
+  --pc-surface-2: #f0f4f9;
+  --pc-border: #e3e8ee;
+  --pc-border-strong: #cfd7df;
+  --pc-brand: #0070e0;
   --pc-brand-dark: #003087;
-  --pc-brand-soft: #e8f0fb;
-  --pc-accent: #b7862a;
-  --pc-accent-soft: #fbf3e1;
-  --pc-danger: #c0392b;
-  --pc-danger-soft: #fdecea;
-  --pc-info: #0059c9;
-  --pc-info-soft: #e8f0fb;
+  --pc-brand-soft: #e6f0fd;
   --pc-on-brand: #ffffff;
-  --pc-accent-ink: #7a5410;
-  --pc-success: #1e7a4f;
-  --pc-success-soft: #e5f4ec;
-  --pc-track: #e6ebf1;
+  --pc-info: #0b8ad1;
+  --pc-info-soft: #e3f4fd;
+  --pc-accent: #d99a00;
+  --pc-accent-soft: #fff4d6;
+  --pc-accent-ink: #7a5600;
+  --pc-success: #13865f;
+  --pc-success-soft: #e2f6ee;
+  --pc-danger: #d64534;
+  --pc-danger-soft: #fdecea;
+  --pc-track: #e4e9f1;
+  --pc-chart-1: #0070e0;
+  --pc-chart-2: #4cc3ff;
+  --pc-chart-3: #ffbf1f;
+  --pc-chart-4: #13865f;
+  --pc-chart-5: #d64534;
+  --pc-chart-6: #003087;
+  --pc-chart-7: #a9b6c9;
+  --pc-chart-8: #7c5cff;
+  --pc-chart-9: #4d5b74;
+  --pc-chart-10: #c9d6ea;
+  --pc-font: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --pc-font-display: var(--pc-font);
+  --pc-font-mono: var(--font-mono), ui-monospace, "SFMono-Regular", monospace;
   color-scheme: light;
-  --pc-font: var(--font-sans-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* Charts: indigo first, then quiet companions so the accent stays the one strong colour. */
-  --pc-chart-1: #0059c9;
-  --pc-chart-2: #7fb2ee;
-  --pc-chart-3: #b7862a;
-  --pc-chart-4: #53627a;
-  --pc-chart-5: #c0392b;
-  --pc-chart-6: #1e7a4f;
-  --pc-chart-7: #c3ccd8;
-  --pc-chart-8: #003087;
-  --pc-chart-9: #3f8be0;
-  --pc-chart-10: #8a97ab;
 }
 
-/* Dark: PayPal navy, not black. Lighter blue accent so it still reads; same token names.
+/* Dark: true black with neutral greys; PayPal blue and the other five colours lifted so each reads.
    Follows the system unless the viewer picks a theme in the header (data-theme on <html>). */
 :root[data-theme="dark"] {
-  --pc-ink: #edf2fa;
-  --pc-muted: #a3b1c6;
-  --pc-canvas: #0a1428;
-  --pc-surface: #111e36;
-  --pc-border: #24365a;
-  --pc-brand: #5ba7ff;
-  --pc-brand-dark: #8cc2ff;
-  --pc-brand-soft: #14305c;
-  --pc-accent: #e0b257;
-  --pc-accent-soft: #33280f;
-  --pc-danger: #ff8a7d;
-  --pc-danger-soft: #3d1d1c;
-  --pc-info: #5ba7ff;
-  --pc-info-soft: #14305c;
-  --pc-on-brand: #04142f;
-  --pc-accent-ink: #f0c877;
-  --pc-success: #5fd39a;
-  --pc-success-soft: #103326;
-  --pc-track: #1f3152;
-  --pc-chart-1: #5ba7ff;
-  --pc-chart-2: #2f5f9e;
-  --pc-chart-3: #e0b257;
-  --pc-chart-4: #a3b1c6;
-  --pc-chart-5: #ff8a7d;
-  --pc-chart-6: #5fd39a;
-  --pc-chart-7: #2a3d61;
-  --pc-chart-8: #8cc2ff;
-  --pc-chart-9: #3b7fd6;
-  --pc-chart-10: #6f7f99;
+  --pc-ink: #f5f5f5;
+  --pc-muted: #a3a3a3;
+  --pc-subtle: #737373;
+  --pc-canvas: #000000;
+  --pc-surface: #0a0a0a;
+  --pc-surface-2: #141414;
+  --pc-border: #1f1f1f;
+  --pc-border-strong: #2e2e2e;
+  --pc-brand: #3d9bff;
+  --pc-brand-dark: #8ec5ff;
+  --pc-brand-soft: #0b1a2e;
+  --pc-on-brand: #00101f;
+  --pc-info: #5cc8ff;
+  --pc-info-soft: #08202e;
+  --pc-accent: #ffc83d;
+  --pc-accent-soft: #241a03;
+  --pc-accent-ink: #ffd66b;
+  --pc-success: #3ddc97;
+  --pc-success-soft: #06231a;
+  --pc-danger: #ff7a6b;
+  --pc-danger-soft: #2a0d0a;
+  --pc-track: #1c1c1c;
+  --pc-chart-1: #3d9bff;
+  --pc-chart-2: #5cc8ff;
+  --pc-chart-3: #ffc83d;
+  --pc-chart-4: #3ddc97;
+  --pc-chart-5: #ff7a6b;
+  --pc-chart-6: #8ec5ff;
+  --pc-chart-7: #3a3a3a;
+  --pc-chart-8: #a48bff;
+  --pc-chart-9: #a3a3a3;
+  --pc-chart-10: #262626;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --pc-ink: #edf2fa;
-    --pc-muted: #a3b1c6;
-    --pc-canvas: #0a1428;
-    --pc-surface: #111e36;
-    --pc-border: #24365a;
-    --pc-brand: #5ba7ff;
-    --pc-brand-dark: #8cc2ff;
-    --pc-brand-soft: #14305c;
-    --pc-accent: #e0b257;
-    --pc-accent-soft: #33280f;
-    --pc-danger: #ff8a7d;
-    --pc-danger-soft: #3d1d1c;
-    --pc-info: #5ba7ff;
-    --pc-info-soft: #14305c;
-    --pc-on-brand: #04142f;
-    --pc-accent-ink: #f0c877;
-    --pc-success: #5fd39a;
-    --pc-success-soft: #103326;
-    --pc-track: #1f3152;
-    --pc-chart-1: #5ba7ff;
-    --pc-chart-2: #2f5f9e;
-    --pc-chart-3: #e0b257;
-    --pc-chart-4: #a3b1c6;
-    --pc-chart-5: #ff8a7d;
-    --pc-chart-6: #5fd39a;
-    --pc-chart-7: #2a3d61;
-    --pc-chart-8: #8cc2ff;
-    --pc-chart-9: #3b7fd6;
-    --pc-chart-10: #6f7f99;
+    --pc-ink: #f5f5f5;
+    --pc-muted: #a3a3a3;
+    --pc-subtle: #737373;
+    --pc-canvas: #000000;
+    --pc-surface: #0a0a0a;
+    --pc-surface-2: #141414;
+    --pc-border: #1f1f1f;
+    --pc-border-strong: #2e2e2e;
+    --pc-brand: #3d9bff;
+    --pc-brand-dark: #8ec5ff;
+    --pc-brand-soft: #0b1a2e;
+    --pc-on-brand: #00101f;
+    --pc-info: #5cc8ff;
+    --pc-info-soft: #08202e;
+    --pc-accent: #ffc83d;
+    --pc-accent-soft: #241a03;
+    --pc-accent-ink: #ffd66b;
+    --pc-success: #3ddc97;
+    --pc-success-soft: #06231a;
+    --pc-danger: #ff7a6b;
+    --pc-danger-soft: #2a0d0a;
+    --pc-track: #1c1c1c;
+    --pc-chart-1: #3d9bff;
+    --pc-chart-2: #5cc8ff;
+    --pc-chart-3: #ffc83d;
+    --pc-chart-4: #3ddc97;
+    --pc-chart-5: #ff7a6b;
+    --pc-chart-6: #8ec5ff;
+    --pc-chart-7: #3a3a3a;
+    --pc-chart-8: #a48bff;
+    --pc-chart-9: #a3a3a3;
+    --pc-chart-10: #262626;
     color-scheme: dark;
   }
 }
@@ -110,24 +121,29 @@
 @theme inline {
   --color-ink: var(--pc-ink);
   --color-muted: var(--pc-muted);
+  --color-subtle: var(--pc-subtle);
   --color-canvas: var(--pc-canvas);
   --color-surface: var(--pc-surface);
+  --color-surface-2: var(--pc-surface-2);
   --color-line: var(--pc-border);
+  --color-line-strong: var(--pc-border-strong);
   --color-brand: var(--pc-brand);
   --color-brand-dark: var(--pc-brand-dark);
   --color-brand-soft: var(--pc-brand-soft);
-  --color-accent: var(--pc-accent);
-  --color-accent-soft: var(--pc-accent-soft);
-  --color-danger: var(--pc-danger);
-  --color-danger-soft: var(--pc-danger-soft);
+  --color-on-brand: var(--pc-on-brand);
   --color-info: var(--pc-info);
   --color-info-soft: var(--pc-info-soft);
-  --color-on-brand: var(--pc-on-brand);
+  --color-accent: var(--pc-accent);
+  --color-accent-soft: var(--pc-accent-soft);
   --color-accent-ink: var(--pc-accent-ink);
   --color-success: var(--pc-success);
   --color-success-soft: var(--pc-success-soft);
+  --color-danger: var(--pc-danger);
+  --color-danger-soft: var(--pc-danger-soft);
   --color-track: var(--pc-track);
   --font-sans: var(--pc-font);
+  --font-display: var(--pc-font-display);
+  --font-mono: var(--pc-font-mono);
   /* Readable floor: nothing anyone needs to read is under 14px; body text is 17px. */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.45;
@@ -138,6 +154,7 @@
 }
 
 body {
+  overflow-x: clip; /* full-bleed sections use 100vw, which includes the scrollbar */
   background: var(--pc-canvas);
   color: var(--pc-ink);
   font-family: var(--pc-font);
@@ -149,13 +166,65 @@ body {
 h1,
 h2,
 h3 {
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  font-family: var(--pc-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Display headline: big and tight. */
+.h-display {
+  font-size: clamp(2.75rem, 5.6vw, 4.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 650;
+}
+.h-section {
+  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+/* Section label in the action colour, the way Stripe introduces a section. */
+.eyebrow {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pc-brand);
+}
+/* Hairline above each section, as in a printed report. */
+.rule {
+  border-top: 1px solid var(--pc-border);
+}
+/* Facts strip: cells separated by 1px hairlines (the grid's background shows through the gaps). */
+.hairline-grid {
+  display: grid;
+  gap: 1px;
+  background: var(--pc-border);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.hairline-grid > * {
+  background: var(--pc-surface);
+}
+
+/* Entrance: rise in once, staggered by --d. */
+@keyframes pc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.rise {
+  animation: pc-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
 }
 
 /* Money always lines up. */
 .num {
   font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--pc-font-mono);
 }
 
 :focus-visible {
@@ -163,10 +232,45 @@ h3 {
   outline-offset: 2px;
 }
 
+/* Stripe-style depth: a hairline plus a soft, layered shadow tinted towards navy. */
 .card {
   background: var(--pc-surface);
   border: 1px solid var(--pc-border);
   border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(10, 37, 64, 0.04), 0 2px 6px -1px rgba(10, 37, 64, 0.06);
+}
+.float {
+  border-radius: 14px;
+  background: var(--pc-surface);
+  box-shadow: 0 50px 100px -20px rgba(10, 37, 64, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(10, 37, 64, 0.04);
+}
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .float {
+  box-shadow: 0 0 0 1px var(--pc-border), 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+}
+
+/* The hero's slanted band: PayPal blues with a touch of gold, drifting slowly. */
+.hero-band {
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 120%;
+  transform: skewY(-9deg);
+  transform-origin: top left;
+  background: linear-gradient(115deg, #003087 0%, #0070e0 30%, #4cc3ff 55%, #ffd140 78%, #ff9f6b 100%);
+  background-size: 200% 200%;
+  animation: pc-drift 18s ease-in-out infinite alternate;
+  opacity: 0.95;
+}
+@keyframes pc-drift {
+  to {
+    background-position: 100% 50%;
+  }
+}
+/* Faint vertical guides behind the page, as on Stripe's site. */
+.guides {
+  background-image: linear-gradient(to right, var(--pc-border) 1px, transparent 1px);
+  background-size: 25% 100%;
+  opacity: 0.5;
 }
 
 /* Landing page: the price ladder lights up step by step, then the price paid appears. */
@@ -261,4 +365,39 @@ h3 {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--pc-muted);
+}
+
+/* Sidebar items: icon + label; the current page gets PayPal blue with a bar on the left. */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--pc-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item:hover {
+  background: var(--pc-surface-2);
+  color: var(--pc-ink);
+}
+.nav-active {
+  background: var(--pc-brand-soft);
+  color: var(--pc-brand-dark);
+  font-weight: 600;
+}
+.nav-active::before {
+  content: "";
+  position: absolute;
+  left: -0.75rem;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--pc-brand);
 }
