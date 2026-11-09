@@ -162,7 +162,7 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
       </svg>
 
       <div className={`card pointer-events-auto absolute inset-x-0 bottom-0 overflow-hidden !rounded-b-none sm:inset-x-auto sm:bottom-6 sm:w-[400px] sm:!rounded-b-[12px] ${side === "right" ? "sm:right-6" : "sm:left-6 lg:left-[284px]"}`} style={{ boxShadow: "0 30px 60px -20px rgba(10,37,64,.35)" }}>
-        <div className="px-6 pb-5 pt-4">
+        <div className="max-h-[calc(100vh-7rem)] overflow-y-auto px-6 pb-5 pt-4">
           <div className="flex items-center justify-between">
             <span className="mono text-sm text-subtle">
               {pad2(step.n)} / {pad2(step.total)}
