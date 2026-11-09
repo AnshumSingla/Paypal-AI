@@ -13,12 +13,24 @@ export async function TourBar({ cycle }: { cycle: typeof s.cycle.$inferSelect })
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line bg-brand-soft/60 px-5 py-4">
       <div className="max-w-2xl">
-        <div className="num text-xs text-muted">
+        <div className="num text-sm text-muted">
           Guided demo, step {step.n} of {TOUR_TOTAL}
           {here ? "" : `, shown in ${WHO[step.as]}`}
         </div>
-        <div className="mt-0.5 font-semibold">{step.title}</div>
-        <p className="mt-0.5 text-sm text-muted">{step.body}</p>
+        <div className="mt-0.5 text-lg font-semibold">{step.title}</div>
+        <p className="mt-1 text-muted">{step.body}</p>
+        {step.edge?.length ? (
+          <details className="group mt-2">
+            <summary className="cursor-pointer text-sm font-semibold text-brand marker:content-none">
+              <span className="inline-block transition-transform group-open:rotate-90">›</span> What could go wrong here?
+            </summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
+              {step.edge.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </div>
       <TourControls cycleId={cycle.id} action={step.action} jumpTo={here ? null : step.as} jumpLabel={`Open ${WHO[step.as]}`} />
     </div>

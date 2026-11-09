@@ -111,12 +111,13 @@ async function markAuthorized(db: DB, basketId: string, paymentId: string, autho
 }
 
 /** Simulated neighbour: server-side card hold (sandbox test card, or mock). */
-export async function cardCheckout(db: DB, basketId: string, actor: string) {
+/** Hold with PayPal's published sandbox test card. A cardholder named CCREJECT-REFUSED is declined by PayPal. */
+export async function cardCheckout(db: DB, basketId: string, actor: string, cardholder?: string) {
   const { lines, cents } = await basketCeiling(db, basketId);
   if (!lines.length) return;
   const [bk] = await db.select().from(s.basket).where(eq(s.basket.id, basketId));
   const gw = gateway();
-  const hold = await gw.cardHold({ cents, referenceId: basketId, description: "Collective simulated neighbour basket" });
+  const hold = await gw.cardHold({ cents, referenceId: basketId, description: "Collective basket", name: cardholder });
   const paymentId = newId("pay");
   await db.insert(s.payment).values({ id: paymentId, basketId, mode: gw.mode, method: "card", paypalOrderId: hold.orderId, authorizedCents: cents, status: "CREATED" });
   await db.update(s.basket).set({ ceilingCents: cents }).where(eq(s.basket.id, bk.id));

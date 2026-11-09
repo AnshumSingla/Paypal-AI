@@ -54,7 +54,7 @@ export function Checkout({ cycleId, mode, clientId, ceilingCents }: { cycleId: s
       >
         {pending && <Spinner />} Approve hold with PayPal <span className="chip bg-white/60">stand-in</span>
       </button>
-      <p className="text-[11px] text-muted">Running without PayPal keys, so this stands in for the PayPal approval popup. With sandbox keys you get the real PayPal button.</p>
+      <p className="text-xs text-muted">Running without PayPal keys, so this stands in for the PayPal approval popup. With sandbox keys you get the real PayPal button.</p>
       {msg ? <Toast ok={msg.ok} text={msg.text} /> : null}
     </div>
   );

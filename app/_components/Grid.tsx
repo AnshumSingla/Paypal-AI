@@ -7,7 +7,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 export const gridTheme = themeQuartz.withParams({
   fontFamily: "var(--pc-font)",
-  fontSize: 13,
+  fontSize: 14.5,
   foregroundColor: "var(--pc-ink)",
   backgroundColor: "var(--pc-surface)",
   borderColor: "var(--pc-border)",

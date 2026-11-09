@@ -1,108 +1,108 @@
 @import "tailwindcss";
 
-/* Collective design tokens: calm and premium. Paper white, ink, hairlines, and one accent, a deep
-   indigo (neel). Amber is kept only for "waiting" states and red only for problems.
-   AG Grid / AG Studio themes read these too. */
+/* Collective design tokens: calm, and close to PayPal. Navy ink, PayPal blue as the one accent,
+   cool grey paper. Amber is kept only for "waiting" states, green for done, red for problems.
+   AG Grid, AG Studio and the Bryntum timeline read these too. */
 :root {
-  --pc-ink: #1a1c21;
-  --pc-muted: #6b6f78;
-  --pc-canvas: #fbfbfa;
+  --pc-ink: #0b1b33;
+  --pc-muted: #53627a;
+  --pc-canvas: #f5f7fa;
   --pc-surface: #ffffff;
-  --pc-border: #e8e8e5;
-  --pc-brand: #2f3a8f;
-  --pc-brand-dark: #222a6b;
-  --pc-brand-soft: #eef0f8;
+  --pc-border: #dfe5ec;
+  --pc-brand: #0059c9;
+  --pc-brand-dark: #003087;
+  --pc-brand-soft: #e8f0fb;
   --pc-accent: #b7862a;
-  --pc-accent-soft: #f8f2e4;
-  --pc-danger: #b4443a;
-  --pc-danger-soft: #fbedeb;
-  --pc-info: #2f3a8f;
-  --pc-info-soft: #eef0f8;
+  --pc-accent-soft: #fbf3e1;
+  --pc-danger: #c0392b;
+  --pc-danger-soft: #fdecea;
+  --pc-info: #0059c9;
+  --pc-info-soft: #e8f0fb;
   --pc-on-brand: #ffffff;
-  --pc-accent-ink: #7d5a14;
-  --pc-success: #2e6b52;
-  --pc-success-soft: #e9f3ee;
-  --pc-track: #efeff0;
+  --pc-accent-ink: #7a5410;
+  --pc-success: #1e7a4f;
+  --pc-success-soft: #e5f4ec;
+  --pc-track: #e6ebf1;
   color-scheme: light;
-  --pc-font: var(--font-mukta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --pc-font: var(--font-sans-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   /* Charts: indigo first, then quiet companions so the accent stays the one strong colour. */
-  --pc-chart-1: #2f3a8f;
-  --pc-chart-2: #9aa3d6;
+  --pc-chart-1: #0059c9;
+  --pc-chart-2: #7fb2ee;
   --pc-chart-3: #b7862a;
-  --pc-chart-4: #6b6f78;
-  --pc-chart-5: #b4443a;
-  --pc-chart-6: #5b8c7a;
-  --pc-chart-7: #c9ccd3;
-  --pc-chart-8: #d8c38f;
-  --pc-chart-9: #444b8f;
-  --pc-chart-10: #8f939b;
+  --pc-chart-4: #53627a;
+  --pc-chart-5: #c0392b;
+  --pc-chart-6: #1e7a4f;
+  --pc-chart-7: #c3ccd8;
+  --pc-chart-8: #003087;
+  --pc-chart-9: #3f8be0;
+  --pc-chart-10: #8a97ab;
 }
 
-/* Dark: deep blue-grey paper, soft white ink, and a lighter indigo so the accent still reads.
+/* Dark: PayPal navy, not black. Lighter blue accent so it still reads; same token names.
    Follows the system unless the viewer picks a theme in the header (data-theme on <html>). */
 :root[data-theme="dark"] {
-  --pc-ink: #e7e8ec;
-  --pc-muted: #9ca0aa;
-  --pc-canvas: #14161b;
-  --pc-surface: #1b1e25;
-  --pc-border: #2b2f38;
-  --pc-brand: #8e98f3;
-  --pc-brand-dark: #aab2f7;
-  --pc-brand-soft: #252a45;
-  --pc-accent: #d6a64c;
-  --pc-accent-soft: #2f2816;
-  --pc-danger: #e5786d;
-  --pc-danger-soft: #3a2220;
-  --pc-info: #8e98f3;
-  --pc-info-soft: #252a45;
-  --pc-on-brand: #11142a;
-  --pc-accent-ink: #e4bb6a;
-  --pc-success: #7cc4a4;
-  --pc-success-soft: #1d3029;
-  --pc-track: #2a2e37;
-  --pc-chart-1: #8e98f3;
-  --pc-chart-2: #4d5694;
-  --pc-chart-3: #d6a64c;
-  --pc-chart-4: #9ca0aa;
-  --pc-chart-5: #e5786d;
-  --pc-chart-6: #7cc4a4;
-  --pc-chart-7: #3c414c;
-  --pc-chart-8: #a8915a;
-  --pc-chart-9: #6c76c9;
-  --pc-chart-10: #6b6f78;
+  --pc-ink: #edf2fa;
+  --pc-muted: #a3b1c6;
+  --pc-canvas: #0a1428;
+  --pc-surface: #111e36;
+  --pc-border: #24365a;
+  --pc-brand: #5ba7ff;
+  --pc-brand-dark: #8cc2ff;
+  --pc-brand-soft: #14305c;
+  --pc-accent: #e0b257;
+  --pc-accent-soft: #33280f;
+  --pc-danger: #ff8a7d;
+  --pc-danger-soft: #3d1d1c;
+  --pc-info: #5ba7ff;
+  --pc-info-soft: #14305c;
+  --pc-on-brand: #04142f;
+  --pc-accent-ink: #f0c877;
+  --pc-success: #5fd39a;
+  --pc-success-soft: #103326;
+  --pc-track: #1f3152;
+  --pc-chart-1: #5ba7ff;
+  --pc-chart-2: #2f5f9e;
+  --pc-chart-3: #e0b257;
+  --pc-chart-4: #a3b1c6;
+  --pc-chart-5: #ff8a7d;
+  --pc-chart-6: #5fd39a;
+  --pc-chart-7: #2a3d61;
+  --pc-chart-8: #8cc2ff;
+  --pc-chart-9: #3b7fd6;
+  --pc-chart-10: #6f7f99;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --pc-ink: #e7e8ec;
-    --pc-muted: #9ca0aa;
-    --pc-canvas: #14161b;
-    --pc-surface: #1b1e25;
-    --pc-border: #2b2f38;
-    --pc-brand: #8e98f3;
-    --pc-brand-dark: #aab2f7;
-    --pc-brand-soft: #252a45;
-    --pc-accent: #d6a64c;
-    --pc-accent-soft: #2f2816;
-    --pc-danger: #e5786d;
-    --pc-danger-soft: #3a2220;
-    --pc-info: #8e98f3;
-    --pc-info-soft: #252a45;
-    --pc-on-brand: #11142a;
-    --pc-accent-ink: #e4bb6a;
-    --pc-success: #7cc4a4;
-    --pc-success-soft: #1d3029;
-    --pc-track: #2a2e37;
-    --pc-chart-1: #8e98f3;
-    --pc-chart-2: #4d5694;
-    --pc-chart-3: #d6a64c;
-    --pc-chart-4: #9ca0aa;
-    --pc-chart-5: #e5786d;
-    --pc-chart-6: #7cc4a4;
-    --pc-chart-7: #3c414c;
-    --pc-chart-8: #a8915a;
-    --pc-chart-9: #6c76c9;
-    --pc-chart-10: #6b6f78;
+    --pc-ink: #edf2fa;
+    --pc-muted: #a3b1c6;
+    --pc-canvas: #0a1428;
+    --pc-surface: #111e36;
+    --pc-border: #24365a;
+    --pc-brand: #5ba7ff;
+    --pc-brand-dark: #8cc2ff;
+    --pc-brand-soft: #14305c;
+    --pc-accent: #e0b257;
+    --pc-accent-soft: #33280f;
+    --pc-danger: #ff8a7d;
+    --pc-danger-soft: #3d1d1c;
+    --pc-info: #5ba7ff;
+    --pc-info-soft: #14305c;
+    --pc-on-brand: #04142f;
+    --pc-accent-ink: #f0c877;
+    --pc-success: #5fd39a;
+    --pc-success-soft: #103326;
+    --pc-track: #1f3152;
+    --pc-chart-1: #5ba7ff;
+    --pc-chart-2: #2f5f9e;
+    --pc-chart-3: #e0b257;
+    --pc-chart-4: #a3b1c6;
+    --pc-chart-5: #ff8a7d;
+    --pc-chart-6: #5fd39a;
+    --pc-chart-7: #2a3d61;
+    --pc-chart-8: #8cc2ff;
+    --pc-chart-9: #3b7fd6;
+    --pc-chart-10: #6f7f99;
     color-scheme: dark;
   }
 }
@@ -128,14 +128,21 @@
   --color-success-soft: var(--pc-success-soft);
   --color-track: var(--pc-track);
   --font-sans: var(--pc-font);
+  /* Readable floor: nothing anyone needs to read is under 14px; body text is 17px. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
 }
 
 body {
   background: var(--pc-canvas);
   color: var(--pc-ink);
   font-family: var(--pc-font);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 17px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -192,14 +199,15 @@ h3 {
 }
 
 .btn {
+  min-height: 2.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border-radius: 10px;
-  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  padding: 0.6rem 1.1rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
   transition: background 0.15s, opacity 0.15s;
   cursor: pointer;
 }
@@ -230,10 +238,10 @@ h3 {
   width: 100%;
   border: 1px solid var(--pc-border);
   border-radius: 10px;
-  padding: 0.5rem 0.7rem;
+  padding: 0.55rem 0.75rem;
   background: var(--pc-surface);
   color: var(--pc-ink);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 .input:focus {
   outline: 2px solid var(--pc-brand);
@@ -244,13 +252,13 @@ h3 {
   align-items: center;
   gap: 0.25rem;
   border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.72rem;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
 }
 .label {
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--pc-muted);
 }

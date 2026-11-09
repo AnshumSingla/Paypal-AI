@@ -14,11 +14,12 @@ import { reportIssue } from "./refunds";
 import { log } from "./ledger";
 
 const RESIDENT_HH = "hh_31";
-const SAMPLE_LIST = "2 dozen eggs, any brand\n10lb India Gate basmati\ntoor dal 4 lb\n1 gal whole milk x2";
+const SAMPLE_LIST = "2 dozen eggs, any brand\n10lb India Gate basmati\ntoor dal 4 lb\n1 gal whole milk x2\n6 pack beer";
 export const TOUR_TOTAL = 12;
 
 type As = keyof typeof PERSONAS;
-export type TourStep = { n: number; as: As; title: string; body: string; action: string | null; id: string };
+/** edge: what could go wrong at this step and what Collective does about it, in plain words. */
+export type TourStep = { n: number; as: As; title: string; body: string; action: string | null; id: string; edge?: string[] };
 
 type Cycle = typeof s.cycle.$inferSelect;
 
@@ -27,25 +28,25 @@ export async function tourStep(db: DB, c: Cycle): Promise<TourStep> {
   switch (c.phase) {
     case "COLLECT": {
       const mine = await n(db.select({ n: count() }).from(s.need).where(and(eq(s.need.cycleId, c.id), eq(s.need.householdId, RESIDENT_HH))));
-      if (!mine) return { n: 1, id: "list", as: "resident", title: "Ananya adds this week's list", body: "She can type it or photograph a handwritten one. The Basket Assistant turns it into products and blocks anything that can't be sold.", action: "Add Ananya's list" };
-      return { n: 2, id: "close-collect", as: "captain", title: "The captain closes collection", body: "Every product the building asked for becomes a pool for local suppliers to bid on.", action: "Close collection" };
+      if (!mine) return { n: 1, id: "list", as: "resident", title: "Ananya adds this week's list", body: "She can type it or photograph a handwritten one. The Basket Assistant turns it into products and blocks anything that can't be sold.", action: "Add Ananya's list", edge: ["The list includes beer. Collective can't sell alcohol, tobacco or medicines, so those lines are blocked before any supplier sees them.","Items the catalog doesn't know are looked up with Channel3, or left for Ananya to fix. Nothing on the list is a commitment yet."] };
+      return { n: 2, id: "close-collect", as: "captain", title: "The captain closes collection", body: "Every product the building asked for becomes a pool for local suppliers to bid on.", action: "Close collection", edge: ["A product nobody else wants still becomes a pool. If no supplier bids on it, it's dropped and nobody is asked to pay for it."] };
     }
     case "BID": {
       const others = await n(db.select({ n: count() }).from(s.bid).innerJoin(s.pool, eq(s.bid.poolId, s.pool.id)).where(and(eq(s.pool.cycleId, c.id), ne(s.bid.sellerId, "sel_fresh"))));
-      if (!others) return { n: 3, id: "bids", as: "captain", title: "Local suppliers bid", body: "Suppliers see totals only, never who ordered what. Each bid is a ladder of prices that drop as the order grows.", action: "Bring in supplier bids" };
-      return { n: 4, id: "close-bid", as: "captain", title: "Trust beats cheap", body: "Code scores each bid on price, the supplier's verified track record and whether the minimum is reachable; the AI explains why. Closing bidding picks the top bid for each pool.", action: "Close bidding" };
+      if (!others) return { n: 3, id: "bids", as: "captain", title: "Local suppliers bid", body: "Suppliers see totals only, never who ordered what. Each bid is a ladder of prices that drop as the order grows.", action: "Bring in supplier bids", edge: ["Suppliers never see names or flats, only totals. A supplier still awaiting approval can't bid.","Every bid must start below the retail price, so residents always save something."] };
+      return { n: 4, id: "close-bid", as: "captain", title: "Trust beats cheap", body: "Code scores each bid on price, the supplier's verified track record and whether the minimum is reachable; the AI explains why. Closing bidding picks the top bid for each pool.", action: "Close bidding", edge: ["The cheapest bid doesn't win automatically: a supplier with upheld complaints scores lower on trust.","The captain can override the pick for any pool before residents confirm."] };
     }
     case "COMMIT": {
       const [bk] = await db.select().from(s.basket).where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH)));
-      if (bk?.status !== "AUTHORIZED") return { n: 5, id: "hold", as: "resident", title: "Ananya approves one PayPal hold", body: "One hold covers the highest price her items could cost. She'll be charged only the price the building unlocks at cutoff.", action: "Place Ananya's PayPal hold" };
+      if (bk?.status !== "AUTHORIZED") return { n: 5, id: "hold", as: "resident", title: "Ananya approves one PayPal hold", body: "One hold covers the highest price her items could cost. She'll be charged only the price the building unlocks at cutoff.", action: "Place Ananya's PayPal hold", edge: ["The hold is for the highest price on the ladder, so it always covers the final charge.","If Ananya changes her basket, the old hold is voided and a new one placed. She is never held twice."] };
       const held = await n(db.select({ n: count() }).from(s.basket).where(and(eq(s.basket.cycleId, c.id), eq(s.basket.status, "AUTHORIZED"))));
-      if (held < 20) return { n: 6, id: "neighbours", as: "resident", title: "Neighbours join, prices drop", body: "Each flat that approves a hold pushes the pool towards a cheaper price break, and the price falls for everyone in it.", action: "12 more flats confirm" };
+      if (held < 20) return { n: 6, id: "neighbours", as: "resident", title: "Neighbours join, prices drop", body: "Each flat that approves a hold pushes the pool towards a cheaper price break, and the price falls for everyone in it.", action: "12 more flats confirm", edge: ["One neighbour's card is declined in this step. That flat simply isn't in the order: no one else is affected and nothing is charged.","Neighbours can withdraw until cutoff; their hold is voided at once."] };
       const asked = await n(db.select({ n: count() }).from(s.activity).where(and(eq(s.activity.cycleId, c.id), eq(s.activity.actor, SECRETARY), like(s.activity.message, "To %"))));
-      if (!asked) return { n: 7, id: "money-on-table", as: "captain", title: "Money on the table", body: "The Secretary tells each supplier how many households and dollars are already authorized in PayPal, and asks for a lower price at that quantity. Prices can only go down.", action: "Let the Secretary negotiate" };
-      return { n: 8, id: "cutoff", as: "resident", title: "Cutoff: PayPal charges the final price", body: "Each hold is captured at the price the building reached. The rest of every hold goes straight back.", action: "Cut off and charge" };
+      if (!asked) return { n: 7, id: "money-on-table", as: "captain", title: "Money on the table", body: "The Secretary tells each supplier how many households and dollars are already authorized in PayPal, and asks for a lower price at that quantity. Prices can only go down.", action: "Let the Secretary negotiate", edge: ["A supplier can lower a price but never below its own floor, and the first price never changes, so every hold still covers the charge.","A supplier can decline. Then nothing changes."] };
+      return { n: 8, id: "cutoff", as: "resident", title: "Cutoff: PayPal charges the final price", body: "Each hold is captured at the price the building reached. The rest of every hold goes straight back.", action: "Cut off and charge", edge: ["Pools that missed their minimum are released: those holds are voided and nobody pays for them.","If one capture fails, only that flat's items are released. Cutoff can be re-run without charging anyone twice."] };
     }
     case "FULFIL":
-      return { n: 9, id: "handover", as: "resident", title: "Ananya's receipt", body: "Approved, paid and released, with the PayPal ID of each step. Next, the captain checks the delivery.", action: "Confirm the delivery" };
+      return { n: 9, id: "handover", as: "resident", title: "Ananya's receipt", body: "Approved, paid and released, with the PayPal ID of each step. Next, the captain checks the delivery.", action: "Confirm the delivery", edge: ["The receipt shows the PayPal ID of every step, and Ananya can check her hold with PayPal from there."] };
     case "RESOLVE": {
       const issues = await n(
         db
@@ -55,11 +56,11 @@ export async function tourStep(db: DB, c: Cycle): Promise<TourStep> {
           .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
           .where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH))),
       );
-      if (!issues) return { n: 10, id: "issue", as: "resident", title: "Something was missing", body: "Ananya reports a missing pack. The Society Secretary checks the claim against the limits and refunds it through PayPal itself.", action: "Report a missing pack" };
-      return { n: 11, id: "payout", as: "seller", title: "Suppliers get paid", body: "When the window for problems closes, each supplier is paid through PayPal Payouts, minus commission and any refunds.", action: "Close the window and pay suppliers" };
+      if (!issues) return { n: 10, id: "issue", as: "resident", title: "Something was missing", body: "Ananya reports a missing pack. The Society Secretary checks the claim against the limits and refunds it through PayPal itself.", action: "Report a missing pack", edge: ["The Secretary refunds at most $10 per issue, never more than was charged for the item, and at most 3 times per flat in 30 days. Anything bigger goes to the captain.","Damaged, wrong or poor-quality items need a photo. Refunds come out of that supplier's payout and lower its trust score."] };
+      return { n: 11, id: "payout", as: "seller", title: "Suppliers get paid", body: "When the window for problems closes, each supplier is paid through PayPal Payouts, minus commission and any refunds.", action: "Close the window and pay suppliers", edge: ["Payouts wait until the 24-hour window for problems closes. If a payout fails, the supplier fixes their details and retries; PayPal never pays the same item twice."] };
     }
     case "CLOSED":
-      return { n: 12, id: "done", as: "operator", title: "The week in numbers", body: "The ledger balances to the cent. Open Analytics to see savings, pool outcomes and supplier trust, or ask the AI analyst a question.", action: null };
+      return { n: 12, id: "done", as: "operator", title: "The week in numbers", body: "The ledger balances to the cent. Open Analytics to see savings, pool outcomes and supplier trust, or ask the AI analyst a question.", action: null, edge: ["Press Reset in the demo controls to run the week again, or open next week to see trust scores carry over."] };
   }
 }
 
@@ -70,9 +71,10 @@ export async function performTourStep(db: DB, c: Cycle, actor: string): Promise<
     case "list": {
       const r = await parseBasket(db, { text: SAMPLE_LIST, householdId: RESIDENT_HH });
       const usable = r.lines.filter((l) => l.productId && !l.restricted);
+      const blocked = r.lines.filter((l) => l.restricted).length;
       if (usable.length) await db.insert(s.need).values(usable.map((l) => ({ id: newId("need"), cycleId: c.id, householdId: RESIDENT_HH, rawText: l.raw, productId: l.productId, qty: l.quantity, brandFlexible: l.brandFlexible, source: "text" as const })));
       await log(db, c.id, "Ananya Kulkarni", "resident", `Added ${usable.length} item(s) to this week's needs.`);
-      return `Ananya's list became ${usable.length} products.`;
+      return `Ananya's list became ${usable.length} products${blocked ? `; ${blocked} restricted item${blocked > 1 ? "s were" : " was"} blocked` : ""}.`;
     }
     case "bids":
       return `${await simulateCompetingBids(db, c.id)} supplier bids came in.`;
@@ -88,8 +90,8 @@ export async function performTourStep(db: DB, c: Cycle, actor: string): Promise<
       return "Ananya's PayPal hold is in place.";
     }
     case "neighbours": {
-      const r = await simulateNeighbours(db, c.id, 12);
-      return `${r.joined} more flats approved PayPal holds${r.failed ? ` (${r.failed} failed)` : ""}.`;
+      const r = await simulateNeighbours(db, c.id, 12, actor, { declineLast: true });
+      return `${r.joined} more flats approved PayPal holds${r.failed ? `; ${r.failed} card was declined, so that flat isn't in the order and no one else is affected` : ""}.`;
     }
     case "money-on-table":
       return (await runSecretary(db, { cycleId: c.id, role: "system", task: { kind: "funded_asks" } })).reply;

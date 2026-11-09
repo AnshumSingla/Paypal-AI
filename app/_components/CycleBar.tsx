@@ -27,14 +27,16 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
           </h1>
         </div>
         {demoMode() && (
-          <div className="flex flex-wrap items-start gap-2 rounded-xl border border-line bg-canvas px-3 py-2">
-            <span className="label self-center">Demo controls</span>
+          <details className="group relative">
+            <summary className="btn btn-ghost cursor-pointer list-none text-sm marker:content-none">Manual controls</summary>
+            <div className="absolute right-0 z-10 mt-2 flex w-72 flex-col gap-2 rounded-2xl border border-line bg-surface p-3 shadow-lg">
+            <p className="text-sm text-muted">Skip the tour and move the week yourself.</p>
             {cycle.phase !== "CLOSED" ? (
-              <ActionButton action={advancePhase.bind(null, cycle.id)} className="btn btn-primary !py-1.5">
+              <ActionButton action={advancePhase.bind(null, cycle.id)} className="btn btn-ghost !py-1.5 bg-surface">
                 {NEXT_LABEL[cycle.phase]}
               </ActionButton>
             ) : (
-              <ActionButton action={nextCycleAction} className="btn btn-primary !py-1.5">
+              <ActionButton action={nextCycleAction} className="btn btn-ghost !py-1.5 bg-surface">
                 Open next week
               </ActionButton>
             )}
@@ -51,10 +53,11 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
             <ActionButton action={resetDemoAction} className="btn btn-ghost !py-1.5 bg-surface" confirm="Reset all demo data back to the start of Week 46?">
               Reset
             </ActionButton>
-          </div>
+            </div>
+          </details>
         )}
       </div>
-      <ol className="mt-4 grid grid-cols-3 border-t border-line text-xs sm:grid-cols-6">
+      <ol className="mt-4 grid grid-cols-3 border-t border-line text-sm sm:grid-cols-6">
         {PHASES.map((p, i) => (
           <li key={p} className={`px-3 py-2.5 font-semibold ${i < idx ? "bg-brand-soft text-brand-dark" : i === idx ? "bg-brand text-on-brand" : "text-muted"}`}>
             <span className="opacity-70">{i + 1}.</span> {PHASE_LABEL[p]}

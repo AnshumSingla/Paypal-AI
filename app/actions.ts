@@ -21,6 +21,7 @@ import { activateSubscription } from "@/lib/paypal/subscriptions";
 import { runSecretary } from "@/lib/ai/secretary";
 import { PERSONAS } from "@/lib/db/seed";
 import { performTourStep, tourStep } from "@/lib/engine/tour";
+import { societyContext } from "@/lib/queries";
 import { refreshRetailPrices } from "@/lib/engine/retail";
 
 export type ActionResult<T = undefined> = { ok: true; message?: string; data?: T } | { ok: false; error: string };
@@ -348,4 +349,14 @@ export async function refreshRetailAction() {
     const { db, user } = await require(["operator"]);
     return { message: await refreshRetailPrices(db, user.name) };
   });
+}
+
+/** Landing page: open the view where the guided demo continues (or start it over first). */
+export async function startTourAction(fresh: boolean) {
+  if (!demoMode()) redirect("/");
+  const { db } = await getSession();
+  if (fresh) await resetDemo(db);
+  const { cycle } = await societyContext(db);
+  const step = cycle ? await tourStep(db, cycle) : null;
+  redirect(await openPersona(step?.as ?? "resident"));
 }

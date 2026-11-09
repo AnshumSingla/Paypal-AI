@@ -87,7 +87,7 @@ export function BidBuilder({ poolId, demand, retailCents, title, existing }: { p
             </button>
           )}
         </div>
-        <p className="mt-1 text-[11px] text-muted">Retail is {`$${dollars(retailCents)}`}. The first price must be below retail, and each break cheaper than the one before.</p>
+        <p className="mt-1 text-xs text-muted">Retail is {`$${dollars(retailCents)}`}. The first price must be below retail, and each break cheaper than the one before.</p>
       </div>
       <button
         className="btn btn-primary"

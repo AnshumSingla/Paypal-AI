@@ -40,7 +40,9 @@ export async function Header() {
           ))}
         </nav>
         <div className="ml-auto flex flex-wrap items-center gap-3">
-          <div className="hidden items-center gap-1.5 lg:flex">
+          {/* Residents, captains and suppliers see one plain chip; the operator sees what's connected. */}
+          {user?.role === "operator" ? (
+            <div className="hidden items-center gap-1.5 lg:flex">
             <span className={`chip ${mode === "sandbox" ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`} title={mode === "sandbox" ? "Real PayPal sandbox API calls" : "No PayPal keys set: an in-process mock with the same rules"}>
               PayPal {mode === "sandbox" ? "sandbox" : "mock"}
             </span>
@@ -48,7 +50,12 @@ export async function Header() {
               AI {aiEnabled() ? "Claude" : "rules"}
             </span>
             <span className={`chip ${channel3Enabled() ? "bg-brand-soft text-brand-dark" : "bg-accent-soft text-accent-ink"}`}>Channel3 {channel3Enabled() ? "on" : "off"}</span>
-          </div>
+            </div>
+          ) : (
+            <span className="chip hidden bg-brand-soft text-brand-dark sm:inline-flex" title={`PayPal ${mode === "sandbox" ? "sandbox" : "stand-in"}, AI ${aiEnabled() ? "Claude" : "rules"}. No real money moves.`}>
+              {mode === "sandbox" ? "PayPal sandbox" : "Demo mode"}
+            </span>
+          )}
           <ThemeToggle />
           <PersonaMenu personas={personas} currentId={user?.id} />
         </div>

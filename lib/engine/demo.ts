@@ -14,7 +14,7 @@ import { decideIssue, reportIssue } from "./refunds";
 export const demoMode = () => process.env.DEMO_MODE !== "false";
 
 /** N more households confirm baskets from the priced pools (COMMIT phase). */
-export async function simulateNeighbours(db: DB, cycleId: string, count: number, actor = "demo") {
+export async function simulateNeighbours(db: DB, cycleId: string, count: number, actor = "demo", opts: { declineLast?: boolean } = {}) {
   const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
   if (c.phase !== "COMMIT") throw new PolicyError("Simulated neighbours join during Confirm & pay.");
   const priced = await db.select({ p: s.pool, b: s.bid }).from(s.pool).innerJoin(s.bid, eq(s.pool.winningBidId, s.bid.id)).where(and(eq(s.pool.cycleId, cycleId), eq(s.pool.status, "PRICED")));
@@ -46,7 +46,8 @@ export async function simulateNeighbours(db: DB, cycleId: string, count: number,
     }
     await db.update(s.basket).set({ simulated: true }).where(eq(s.basket.id, bk.id));
     try {
-      await cardCheckout(db, bk.id, "simulated neighbour");
+      const declined = opts.declineLast && householdId === targets.at(-1);
+      await cardCheckout(db, bk.id, "simulated neighbour", declined ? "CCREJECT-REFUSED" : undefined);
       joined++;
     } catch (e) {
       failed++;

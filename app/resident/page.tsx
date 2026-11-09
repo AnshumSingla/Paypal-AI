@@ -145,7 +145,7 @@ export default async function ResidentPage() {
                     <span>If cutoff were now</span>
                     <b>{fmt(estimate)}</b>
                   </div>
-                  <p className="mt-2 text-[11px] text-muted">You&apos;ll never pay more than the hold. Items whose pool misses its minimum aren&apos;t charged at all.</p>
+                  <p className="mt-2 text-xs text-muted">You&apos;ll never pay more than the hold. Items whose pool misses its minimum aren&apos;t charged at all.</p>
                 </div>
                 {held ? (
                   <div className="space-y-2">

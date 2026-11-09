@@ -17,12 +17,12 @@ import { recordTrust, trustScores } from "./trust";
 export type Phase = (typeof s.cycle.$inferSelect)["phase"];
 export const PHASES: Phase[] = ["COLLECT", "BID", "COMMIT", "FULFIL", "RESOLVE", "CLOSED"];
 export const PHASE_LABEL: Record<Phase, string> = {
-  COLLECT: "Collecting needs",
-  BID: "Sellers bidding",
-  COMMIT: "Confirm & pay (hold)",
+  COLLECT: "Lists",
+  BID: "Supplier bids",
+  COMMIT: "PayPal holds",
   FULFIL: "Delivery",
-  RESOLVE: "Issue window",
-  CLOSED: "Closed & paid out",
+  RESOLVE: "Problems",
+  CLOSED: "Paid out",
 };
 
 export async function currentCycle(db: DB, societyId: string) {

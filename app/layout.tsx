@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Mukta } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Header } from "./_components/Header";
 
-// Mukta (Ek Type, Mumbai): a calm humanist sans with Devanagari, chosen for an Indian housing society.
-const mukta = Mukta({ subsets: ["latin", "devanagari"], weight: ["400", "500", "600", "700"], variable: "--font-mukta", display: "swap" });
+// Plus Jakarta Sans: open shapes and a tall x-height, so prices and small labels stay readable,
+// and close in spirit to PayPal's own type.
+const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans-ui", display: "swap" });
 
 export const metadata: Metadata = {
   // Render sets RENDER_EXTERNAL_URL; social preview images need an absolute base.
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={mukta.variable} suppressHydrationWarning>
+    <html lang="en" className={sans.variable} suppressHydrationWarning>
       <body className="min-h-screen">
         {/* Apply a saved light or dark choice before the page hydrates. */}
         <Script id="theme" strategy="beforeInteractive">{`try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`}</Script>

@@ -198,7 +198,7 @@ export const defaultReport: AgReportState = { selectedPageId: overview.id, pages
 const token = (n: string) => `var(--pc-${n})`;
 export const poolcartStudioTheme = studioTheme.withParams({
   fontFamily: token("font"),
-  fontSize: 14,
+  fontSize: 15,
   textColor: token("ink"),
   foregroundColor: token("ink"),
   subtleTextColor: token("muted"),
