@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { tourJumpAction, tourNextAction } from "@/app/actions";
 import { Spinner, Toast } from "./ActionButton";
@@ -9,11 +9,26 @@ export function TourControls({ cycleId, action, jumpTo, jumpLabel }: { cycleId: 
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // A step usually opens another person's view; carry its result across so it isn't lost.
+  useEffect(() => {
+    try {
+      const carried = sessionStorage.getItem("tour-msg");
+      if (carried) {
+        sessionStorage.removeItem("tour-msg");
+        setMsg({ ok: true, text: carried });
+      }
+    } catch {}
+  }, []);
   const go = (fn: () => ReturnType<typeof tourNextAction>) =>
     start(async () => {
       const r = await fn();
       setMsg(r.ok ? (r.message ? { ok: true, text: r.message } : null) : { ok: false, text: r.error });
-      if (r.ok && r.data?.href) router.push(r.data.href);
+      if (r.ok && r.data?.href) {
+        try {
+          if (r.message) sessionStorage.setItem("tour-msg", r.message);
+        } catch {}
+        router.push(r.data.href);
+      }
       router.refresh();
     });
   return (
