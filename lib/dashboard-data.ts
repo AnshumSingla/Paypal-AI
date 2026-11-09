@@ -75,7 +75,10 @@ export async function dashboardData(db: DB) {
   // Complaints carry weight 3 each in the trust score; show the number of complaints here.
   const trust = suppliers.map((x) => ({ supplier: x.businessName, trust: scores.get(x.id) ?? 0, delivered: count(x.id, "delivered"), issues: Math.round(count(x.id, "issue_upheld") / 3) }));
 
-  return { lines, pools, payouts, payments, trust, asOf: new Date().toISOString() };
+  // Charts group by week in the order rows arrive, so put every table in week order.
+  const wk = (x: { week: string }) => Number(x.week.replace(/D/g, "")) || 0;
+  const byWeek = <T extends { week: string }>(rows: T[]) => [...rows].sort((a, b) => wk(a) - wk(b));
+  return { lines: byWeek(lines), pools: byWeek(pools), payouts: byWeek(payouts), payments: byWeek(payments), trust, asOf: new Date().toISOString() };
 }
 
 export type DashboardData = Awaited<ReturnType<typeof dashboardData>>;
