@@ -28,3 +28,6 @@ brag-output/demo/shots/
 brag-output/demo/chrome-profile/
 brag-output/demo/music.wav
 brag-output/demo/video.html
+brag-output/demo/mobile/
+brag-output/demo/mobile.mjs
+brag-output/demo/chrome-profile-m/
