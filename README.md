@@ -79,6 +79,8 @@ Orders and Payments calls go through PayPal's official Server SDK ([`@paypal/pay
 | Webhooks | `POST /v1/notifications/verify-webhook-signature`, event de-duplication | `app/api/webhooks/paypal/route.ts` |
 | Checkout UI | `@paypal/react-paypal-js` PayPal Buttons | `app/resident/Checkout.tsx` |
 
+To replay the money flow by hand, import [`docs/postman/Collective-PayPal-sandbox.postman_collection.json`](docs/postman/Collective-PayPal-sandbox.postman_collection.json) into Postman: token, hold for the maximum, partial final capture, refund, a voided hold, and a payout, in the order a week makes them.
+
 Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settlement is re-runnable: each capture is recorded in one database transaction, and a cutoff that fails part-way can run again without charging anyone twice.
 
 ## AI
@@ -96,6 +98,7 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settle
 | **Channel3** | Identifies unfamiliar products on a resident's list. The operator's "Check with Channel3" sets each product's retail price from today's listings (lower median, outliers ignored), so "saved against retail" is measured against a real price (`lib/engine/retail.ts`) |
 | **Bryntum Scheduler** | "This week, step by step" on the resident and captain pages: when lists close, when suppliers bid, when the PayPal hold is placed and charged, the drop, the 24-hour problem window and supplier payouts (`app/_components/WeekTimelineView.tsx`, `lib/schedule.ts`) |
 | **APIMatic** | PayPal's APIMatic-generated Server SDK carries every hold, capture, void and refund (`lib/paypal/gateway.ts`); the APIMatic Context Plugin was used in Claude Code while building it |
+| **Postman** | A collection of the exact PayPal sandbox calls Collective makes, runnable top to bottom (`docs/postman/`) |
 | **Render** | `render.yaml` blueprint: web service and managed Postgres, a health check that reaches the database, and a Deploy to Render button |
 
 ## Run it locally

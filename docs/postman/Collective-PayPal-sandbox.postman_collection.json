@@ -1,0 +1,112 @@
+{
+  "info": {
+    "name": "Collective: PayPal sandbox calls",
+    "description": "The PayPal calls Collective makes, in the order a week makes them: get a token, place a hold for the maximum, charge the price the building unlocked (partial final capture), void a hold whose pool failed, refund a problem, pay suppliers. Set client_id and client_secret (sandbox REST app) in the collection variables, then run top to bottom; each request saves the ids the next one needs. Sandbox only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "https://api-m.sandbox.paypal.com" },
+    { "key": "client_id", "value": "" },
+    { "key": "client_secret", "value": "" },
+    { "key": "payout_receiver", "value": "sb-personal@example.com" },
+    { "key": "app", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "order_id", "value": "" },
+    { "key": "authorization_id", "value": "" },
+    { "key": "capture_id", "value": "" },
+    { "key": "void_order_id", "value": "" },
+    { "key": "void_authorization_id", "value": "" },
+    { "key": "batch_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Collective health (app)",
+      "request": { "method": "GET", "url": "{{app}}/api/health" }
+    },
+    {
+      "name": "1. OAuth token",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('token', pm.response.json().access_token);"] } }],
+      "request": {
+        "method": "POST",
+        "auth": { "type": "basic", "basic": [{ "key": "username", "value": "{{client_id}}" }, { "key": "password", "value": "{{client_secret}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": { "mode": "urlencoded", "urlencoded": [{ "key": "grant_type", "value": "client_credentials" }] },
+        "url": "{{base}}/v1/oauth2/token"
+      }
+    },
+    {
+      "name": "2. Hold the maximum: create order (intent AUTHORIZE, sandbox test card)",
+      "description": "Ananya's basket could cost at most $41.20 if no cheaper price break is reached, so she approves a hold for that. The card is PayPal's published sandbox test card.",
+      "event": [{ "listen": "test", "script": { "exec": ["const o = pm.response.json();", "pm.collectionVariables.set('order_id', o.id);", "const a = o.purchase_units?.[0]?.payments?.authorizations?.[0];", "if (a) pm.collectionVariables.set('authorization_id', a.id);"] } }],
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "PayPal-Request-Id", "value": "{{$guid}}" }, { "key": "Prefer", "value": "return=representation" }],
+        "body": { "mode": "raw", "raw": "{\n  \"intent\": \"AUTHORIZE\",\n  \"purchase_units\": [{ \"reference_id\": \"basket-demo\", \"description\": \"Collective weekly basket\", \"amount\": { \"currency_code\": \"USD\", \"value\": \"41.20\" } }],\n  \"payment_source\": { \"card\": { \"name\": \"Ananya Kulkarni\", \"number\": \"4012888888881881\", \"expiry\": \"2030-12\", \"security_code\": \"123\", \"billing_address\": { \"address_line_1\": \"1 Maple Way\", \"admin_area_2\": \"San Jose\", \"admin_area_1\": \"CA\", \"postal_code\": \"95131\", \"country_code\": \"US\" } } }\n}" },
+        "url": "{{base}}/v2/checkout/orders"
+      }
+    },
+    {
+      "name": "3. Check the hold",
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }, "url": "{{base}}/v2/payments/authorizations/{{authorization_id}}" }
+    },
+    {
+      "name": "4. Cutoff: charge the unlocked price (partial, final capture)",
+      "description": "The building reached a cheaper price break, so only $34.60 of the $41.20 hold is captured. final_capture releases the rest at once.",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('capture_id', pm.response.json().id);"] } }],
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "PayPal-Request-Id", "value": "capture-{{authorization_id}}" }, { "key": "Prefer", "value": "return=representation" }],
+        "body": { "mode": "raw", "raw": "{\n  \"amount\": { \"currency_code\": \"USD\", \"value\": \"34.60\" },\n  \"final_capture\": true,\n  \"invoice_id\": \"demo-{{$timestamp}}\",\n  \"note_to_payer\": \"Collective: you paid the price your building unlocked.\"\n}" },
+        "url": "{{base}}/v2/payments/authorizations/{{authorization_id}}/capture"
+      }
+    },
+    {
+      "name": "5. A problem: refund one missing pack",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "PayPal-Request-Id", "value": "refund-{{capture_id}}" }],
+        "body": { "mode": "raw", "raw": "{\n  \"amount\": { \"currency_code\": \"USD\", \"value\": \"3.43\" },\n  \"note_to_payer\": \"Collective refund: Large white eggs (missing)\"\n}" },
+        "url": "{{base}}/v2/payments/captures/{{capture_id}}/refund"
+      }
+    },
+    {
+      "name": "6a. A pool that misses its minimum: another hold",
+      "event": [{ "listen": "test", "script": { "exec": ["const o = pm.response.json();", "pm.collectionVariables.set('void_order_id', o.id);", "const a = o.purchase_units?.[0]?.payments?.authorizations?.[0];", "if (a) pm.collectionVariables.set('void_authorization_id', a.id);"] } }],
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "PayPal-Request-Id", "value": "{{$guid}}" }, { "key": "Prefer", "value": "return=representation" }],
+        "body": { "mode": "raw", "raw": "{\n  \"intent\": \"AUTHORIZE\",\n  \"purchase_units\": [{ \"reference_id\": \"basket-void-demo\", \"amount\": { \"currency_code\": \"USD\", \"value\": \"15.49\" } }],\n  \"payment_source\": { \"card\": { \"name\": \"Rohan Mehta\", \"number\": \"4012888888881881\", \"expiry\": \"2030-12\", \"security_code\": \"123\", \"billing_address\": { \"address_line_1\": \"1 Maple Way\", \"admin_area_2\": \"San Jose\", \"admin_area_1\": \"CA\", \"postal_code\": \"95131\", \"country_code\": \"US\" } } }\n}" },
+        "url": "{{base}}/v2/checkout/orders"
+      }
+    },
+    {
+      "name": "6b. ...and its hold is voided: nobody pays",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "PayPal-Request-Id", "value": "void-{{void_authorization_id}}" }],
+        "url": "{{base}}/v2/payments/authorizations/{{void_authorization_id}}/void"
+      }
+    },
+    {
+      "name": "7. Pay suppliers (Payouts)",
+      "description": "After the 24-hour window for problems: gross minus commission minus refunds, one item per supplier. The sender_batch_id makes a retry safe.",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('batch_id', pm.response.json().batch_header.payout_batch_id);"] } }],
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"sender_batch_header\": { \"sender_batch_id\": \"collective-demo-{{$timestamp}}\", \"email_subject\": \"You have a Collective payout\" },\n  \"items\": [{ \"recipient_type\": \"EMAIL\", \"receiver\": \"{{payout_receiver}}\", \"amount\": { \"currency\": \"USD\", \"value\": \"28.40\" }, \"sender_item_id\": \"week-demo:sel_corner\", \"note\": \"Gross $34.60, commission $2.77, refunds $3.43\" }]\n}" },
+        "url": "{{base}}/v1/payments/payouts"
+      }
+    },
+    {
+      "name": "8. Check the payout batch",
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }, "url": "{{base}}/v1/payments/payouts/{{batch_id}}" }
+    }
+  ]
+}
