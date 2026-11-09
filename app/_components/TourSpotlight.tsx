@@ -27,6 +27,8 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
   const [open, setOpen] = useState(true);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [edgeOpen, setEdgeOpen] = useState(false);
+  // The card sits opposite the spotlit section so it never covers it.
+  const [side, setSide] = useState<"right" | "left">("right");
   const pathRef = useRef<SVGPathElement>(null);
   const ringRef = useRef<SVGRectElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
@@ -62,7 +64,12 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
     if (!open) return;
     const el = step.here && step.target ? document.querySelector<HTMLElement>(`[data-tour="${step.target}"], #${step.target}`) : null;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+    // Tall sections scroll to their top so the reader starts at their heading; short ones are centred.
+    if (el) {
+      const r0 = el.getBoundingClientRect();
+      setSide(r0.left + r0.width / 2 > window.innerWidth * 0.55 ? "left" : "right"); // eslint-disable-line react-hooks/set-state-in-effect -- measured from the DOM after render
+    } else setSide("right");
+    if (el) el.scrollIntoView({ block: el.offsetHeight > window.innerHeight * 0.6 ? "start" : "center", behavior: reduced ? "auto" : "smooth" });
     let raf = 0;
     const tick = () => {
       let goal: Box = { x: window.innerWidth / 2, y: window.innerHeight / 2, w: 0, h: 0 };
@@ -154,7 +161,7 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
         <rect ref={ringRef} rx={12} fill="none" strokeWidth={2} style={{ stroke: "var(--pc-brand)" }} />
       </svg>
 
-      <div className="card pointer-events-auto absolute inset-x-0 bottom-0 overflow-hidden !rounded-b-none sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[400px] sm:!rounded-b-[12px]" style={{ boxShadow: "0 30px 60px -20px rgba(10,37,64,.35)" }}>
+      <div className={`card pointer-events-auto absolute inset-x-0 bottom-0 overflow-hidden !rounded-b-none sm:inset-x-auto sm:bottom-6 sm:w-[400px] sm:!rounded-b-[12px] ${side === "right" ? "sm:right-6" : "sm:left-6 lg:left-[284px]"}`} style={{ boxShadow: "0 30px 60px -20px rgba(10,37,64,.35)" }}>
         <div className="px-6 pb-5 pt-4">
           <div className="flex items-center justify-between">
             <span className="mono text-sm text-subtle">
