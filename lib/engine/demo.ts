@@ -106,7 +106,7 @@ const HISTORY_ISSUE_RATE: Record<string, number> = { sel_fresh: 0.02, sel_valley
 const OFFLINE_KEYS = ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "GEMINI_API_KEY", "GROQ_API_KEY", "CHANNEL3_API_KEY"] as const;
 
 /**
- * Weeks 43-45 run through the real engine so the dashboard and trust scores rest on history.
+ * Weeks 40-45 run through the real engine so the dashboard and trust scores rest on history.
  * They run offline (mock PayPal, rule-based AI): no sandbox calls or AI cost at seed time, and their
  * payments are stored with mode "mock". Keys are blanked only for the few seconds this takes.
  */
@@ -114,7 +114,7 @@ export async function seedHistory(db: DB) {
   const saved = OFFLINE_KEYS.map((k) => [k, process.env[k]] as const);
   for (const k of OFFLINE_KEYS) process.env[k] = "";
   try {
-    for (const week of [43, 44, 45]) {
+    for (const week of [40, 41, 42, 43, 44, 45]) {
       const id = `cyc_w${week}`;
       const createdAt = new Date(Date.now() - (46 - week) * 7 * 24 * 3600 * 1000);
       await db.insert(s.cycle).values({ id, societyId: SOCIETY_ID, weekLabel: `Week ${week}`, phase: "COLLECT", deadlines: weekDeadlines(createdAt), createdAt });

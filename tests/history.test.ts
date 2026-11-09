@@ -27,7 +27,7 @@ beforeAll(async () => {
 describe("seeded history", () => {
   it("closes three past weeks and leaves Week 46 as the current cycle", async () => {
     const closed = await db.select().from(s.cycle).where(eq(s.cycle.phase, "CLOSED"));
-    expect(closed.map((c) => c.weekLabel).sort()).toEqual(["Week 43", "Week 44", "Week 45"]);
+    expect(closed.map((c) => c.weekLabel).sort()).toEqual(["Week 40", "Week 41", "Week 42", "Week 43", "Week 44", "Week 45"]);
     const cur = await currentCycle(db, SOCIETY_ID);
     expect(cur?.id).toBe("cyc_w46");
     expect(cur?.phase).toBe("COLLECT");
