@@ -123,6 +123,9 @@ export async function seedHistory(db: DB) {
       await simulateCompetingBids(db, id, true);
       await advance(db, id, "history"); // → COMMIT
       await simulateNeighbours(db, id, 20, "history");
+      // Each week the Secretary takes the authorized money back to the winning suppliers, as it would live.
+      const { runSecretary } = await import("../ai/secretary"); // dynamic: secretary imports the engine
+      await runSecretary(db, { cycleId: id, role: "system", task: { kind: "funded_asks" } });
       await advance(db, id, "history"); // → FULFIL (settle)
       await advance(db, id, "history"); // → RESOLVE (handover)
       const rand = rng(week * 31);
