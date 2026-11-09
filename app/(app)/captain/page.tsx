@@ -101,7 +101,7 @@ export default async function CaptainPage() {
         />
       </StatRow>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-6">
           <Panel
             id="demand"

@@ -39,7 +39,7 @@ function NextPriceCell({ data }: { data?: Row }) {
 const cols: ColDef<Row>[] = [
   { field: "product", headerName: "Pool", minWidth: 200, pinned: "left" },
   { field: "pack", headerName: "Pack", maxWidth: 110 },
-  { field: "status", maxWidth: 150, cellRenderer: StatusCell },
+  { field: "status", minWidth: 160, maxWidth: 190, cellRenderer: StatusCell },
   { field: "demand", headerName: "Wanted", maxWidth: 100, type: "numericColumn" },
   { field: "bids", maxWidth: 80, type: "numericColumn" },
   { field: "seller", headerName: "Supplier", minWidth: 160 },

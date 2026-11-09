@@ -84,7 +84,7 @@ export default async function OpsPage() {
       </StatRow>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <Panel
