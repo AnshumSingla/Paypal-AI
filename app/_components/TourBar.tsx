@@ -21,6 +21,7 @@ const TARGET: Record<string, string> = {
   issue: "receipt",
   payout: "payouts",
   done: "stats",
+  decide: "issues",
 };
 
 export async function TourBar({ cycle }: { cycle: typeof s.cycle.$inferSelect }) {
@@ -30,7 +31,7 @@ export async function TourBar({ cycle }: { cycle: typeof s.cycle.$inferSelect })
   return (
     <TourSpotlight
       cycleId={cycle.id}
-      step={{ n: step.n, total: TOUR_TOTAL, title: step.title, body: step.body, edge: step.edge ?? [], action: step.action, target: TARGET[step.id] ?? null, here, jumpTo: step.as, jumpLabel: `Open ${WHO[step.as]}` }}
+      step={{ choices: step.choices ?? [], n: step.n, total: TOUR_TOTAL, title: step.title, body: step.body, edge: step.edge ?? [], action: step.action, target: TARGET[step.id] ?? null, here, jumpTo: step.as, jumpLabel: `Open ${WHO[step.as]}` }}
     />
   );
 }

@@ -85,13 +85,13 @@ async function openPersona(as: keyof typeof PERSONAS) {
 }
 
 /** Run the guided demo's current step, then switch to the person whose view shows the next one. */
-export async function tourNextAction(cycleId: string) {
+export async function tourNextAction(cycleId: string, choice?: string) {
   return guard<{ href: string }>(async () => {
     if (!demoMode()) throw new PolicyError("The guided demo is off.");
     const { db, user } = await getSession();
     const [c] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
     if (!c) throw new PolicyError("Cycle not found.");
-    const message = await performTourStep(db, c, user?.name ?? "Guided demo");
+    const message = await performTourStep(db, c, user?.name ?? "Guided demo", choice);
     const [after] = await db.select().from(s.cycle).where(eq(s.cycle.id, cycleId));
     const next = await tourStep(db, after);
     return { message, data: { href: await openPersona(next.as) } };

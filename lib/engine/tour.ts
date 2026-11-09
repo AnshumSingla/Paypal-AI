@@ -8,9 +8,9 @@ import { PERSONAS } from "../db/seed";
 import { parseBasket } from "../ai/agents/basket";
 import { runSecretary, SECRETARY } from "../ai/secretary";
 import { advance } from "./cycle";
-import { cardCheckout, getOrCreateBasket, setLineQty } from "./basket";
+import { cardCheckout, getOrCreateBasket, setLineQty, withdrawBasket } from "./basket";
 import { simulateCompetingBids, simulateNeighbours } from "./demo";
-import { reportIssue } from "./refunds";
+import { decideIssue, reportIssue } from "./refunds";
 import { log } from "./ledger";
 
 const RESIDENT_HH = "hh_31";
@@ -19,7 +19,9 @@ export const TOUR_TOTAL = 12;
 
 type As = keyof typeof PERSONAS;
 /** edge: what could go wrong at this step and what Collective does about it, in plain words. */
-export type TourStep = { n: number; as: As; title: string; body: string; action: string | null; id: string; edge?: string[] };
+/** choices: the reviewer picks what happens at this step (each runs the real engine). */
+export type TourChoice = { id: string; label: string; hint: string };
+export type TourStep = { n: number; as: As; title: string; body: string; action: string | null; id: string; edge?: string[]; choices?: TourChoice[] };
 
 type Cycle = typeof s.cycle.$inferSelect;
 
@@ -40,7 +42,7 @@ export async function tourStep(db: DB, c: Cycle): Promise<TourStep> {
       const [bk] = await db.select().from(s.basket).where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH)));
       if (bk?.status !== "AUTHORIZED") return { n: 5, id: "hold", as: "resident", title: "Ananya approves one PayPal hold", body: "One hold covers the highest price her items could cost. She'll be charged only the price the building unlocks at cutoff.", action: "Place Ananya's PayPal hold", edge: ["The hold is for the highest price on the ladder, so it always covers the final charge.","If Ananya changes her basket, the old hold is voided and a new one placed. She is never held twice."] };
       const held = await n(db.select({ n: count() }).from(s.basket).where(and(eq(s.basket.cycleId, c.id), eq(s.basket.status, "AUTHORIZED"))));
-      if (held < 20) return { n: 6, id: "neighbours", as: "resident", title: "Neighbours join, prices drop", body: "Each flat that approves a hold pushes the pool towards a cheaper price break, and the price falls for everyone in it.", action: "12 more flats confirm", edge: ["One neighbour's card is declined in this step. That flat simply isn't in the order: no one else is affected and nothing is charged.","Neighbours can withdraw until cutoff; their hold is voided at once."] };
+      if (held < 20) return { n: 6, id: "neighbours", as: "resident", title: "Neighbours join, prices drop", body: "Each flat that approves a hold pushes the pool towards a cheaper price break, and the price falls for everyone in it.", action: "12 more flats confirm", choices: [{ id: "decline", label: "12 flats confirm, one card is declined", hint: "That flat isn't in the order. Nobody else is affected." }, { id: "all", label: "12 flats confirm", hint: "Every hold is approved and prices fall for everyone." }, { id: "withdraw", label: "Ananya withdraws instead", hint: "Her PayPal hold is voided at once, and the tour goes back to her hold." }], edge: ["One neighbour's card is declined in this step. That flat simply isn't in the order: no one else is affected and nothing is charged.","Neighbours can withdraw until cutoff; their hold is voided at once."] };
       const asked = await n(db.select({ n: count() }).from(s.activity).where(and(eq(s.activity.cycleId, c.id), eq(s.activity.actor, SECRETARY), like(s.activity.message, "To %"))));
       if (!asked) return { n: 7, id: "money-on-table", as: "captain", title: "Money on the table", body: "The Secretary tells each supplier how many households and dollars are already authorized in PayPal, and asks for a lower price at that quantity. Prices can only go down.", action: "Let the Secretary negotiate", edge: ["A supplier can lower a price but never below its own floor, and the first price never changes, so every hold still covers the charge.","A supplier can decline. Then nothing changes."] };
       return { n: 8, id: "cutoff", as: "resident", title: "Cutoff: PayPal charges the final price", body: "Each hold is captured at the price the building reached. The rest of every hold goes straight back.", action: "Cut off and charge", edge: ["Pools that missed their minimum are released: those holds are voided and nobody pays for them.","If one capture fails, only that flat's items are released. Cutoff can be re-run without charging anyone twice."] };
@@ -56,7 +58,15 @@ export async function tourStep(db: DB, c: Cycle): Promise<TourStep> {
           .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
           .where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH))),
       );
-      if (!issues) return { n: 10, id: "issue", as: "resident", title: "Something was missing", body: "Ananya reports a missing pack. The Society Secretary checks the claim against the limits and refunds it through PayPal itself.", action: "Report a missing pack", edge: ["The Secretary refunds at most $10 per issue, never more than was charged for the item, and at most 3 times per flat in 30 days. Anything bigger goes to the captain.","Damaged, wrong or poor-quality items need a photo. Refunds come out of that supplier's payout and lower its trust score."] };
+      const [pending] = await db
+        .select({ id: s.issue.id })
+        .from(s.issue)
+        .innerJoin(s.basketLine, eq(s.issue.basketLineId, s.basketLine.id))
+        .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
+        .where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH), eq(s.issue.decision, "pending")));
+      if (pending)
+        return { n: 10, id: "decide", as: "captain", title: "The captain decides", body: "The claim is over the Secretary's $10 limit, so a person decides. Approving refunds it through PayPal and charges it to the supplier.", action: "Approve the refund", edge: ["A rejected claim is recorded against the household's reliability, never as a penalty in money.", "Refunds never exceed what was charged for the item."], choices: [{ id: "approve", label: "Approve the refund", hint: "PayPal refunds Ananya; the supplier's payout and trust score take the hit." }, { id: "reject", label: "Reject the claim", hint: "No refund. The decision is logged with who made it." }] };
+      if (!issues) return { n: 10, id: "issue", as: "resident", title: "Something was missing", body: "Ananya reports a missing pack. The Society Secretary checks the claim against the limits and refunds it through PayPal itself.", action: "Report a missing pack", choices: [{ id: "small", label: "One pack was missing", hint: "Under $10, so the Secretary refunds it through PayPal itself." }, { id: "large", label: "A whole item over $10 was missing", hint: "Over the Secretary's limit, so the captain decides." }], edge: ["The Secretary refunds at most $10 per issue, never more than was charged for the item, and at most 3 times per flat in 30 days. Anything bigger goes to the captain.","Damaged, wrong or poor-quality items need a photo. Refunds come out of that supplier's payout and lower its trust score."] };
       return { n: 11, id: "payout", as: "seller", title: "Suppliers get paid", body: "When the window for problems closes, each supplier is paid through PayPal Payouts, minus commission and any refunds.", action: "Close the window and pay suppliers", edge: ["Payouts wait until the 24-hour window for problems closes. If a payout fails, the supplier fixes their details and retries; PayPal never pays the same item twice."] };
     }
     case "CLOSED":
@@ -65,7 +75,7 @@ export async function tourStep(db: DB, c: Cycle): Promise<TourStep> {
 }
 
 /** Run the current step. Returns a short message for the screen. */
-export async function performTourStep(db: DB, c: Cycle, actor: string): Promise<string> {
+export async function performTourStep(db: DB, c: Cycle, actor: string, choice?: string): Promise<string> {
   const step = await tourStep(db, c);
   switch (step.id) {
     case "list": {
@@ -80,17 +90,24 @@ export async function performTourStep(db: DB, c: Cycle, actor: string): Promise<
       return `${await simulateCompetingBids(db, c.id)} supplier bids came in.`;
     case "hold": {
       const bk = await getOrCreateBasket(db, c.id, RESIDENT_HH);
-      const lines = await db.select({ n: count() }).from(s.basketLine).where(eq(s.basketLine.basketId, bk.id));
-      if (!lines[0].n) {
-        const [eggs] = await db.select().from(s.pool).where(and(eq(s.pool.cycleId, c.id), eq(s.pool.status, "PRICED"))).orderBy(sql`${s.pool.demandEstimate} desc`).limit(1);
-        if (eggs) await setLineQty(db, { cycleId: c.id, householdId: RESIDENT_HH, poolId: eggs.id, qty: 1, actor });
+      // Ananya takes 4 packs of the building's most popular item, so the tour can show both a small
+      // claim the Secretary refunds and one over its $10 limit that goes to the captain.
+      const [popular] = await db.select().from(s.pool).where(and(eq(s.pool.cycleId, c.id), eq(s.pool.status, "PRICED"))).orderBy(sql`${s.pool.demandEstimate} desc`).limit(1);
+      if (popular) {
+        const [have] = await db.select().from(s.basketLine).where(and(eq(s.basketLine.basketId, bk.id), eq(s.basketLine.poolId, popular.id)));
+        if (!have || have.qty < 4) await setLineQty(db, { cycleId: c.id, householdId: RESIDENT_HH, poolId: popular.id, qty: 4, actor });
       }
       await db.update(s.payment).set({ status: "SUPERSEDED" }).where(and(eq(s.payment.basketId, bk.id), eq(s.payment.status, "CREATED")));
       await cardCheckout(db, bk.id, "Ananya Kulkarni");
       return "Ananya's PayPal hold is in place.";
     }
     case "neighbours": {
-      const r = await simulateNeighbours(db, c.id, 12, actor, { declineLast: true });
+      if (choice === "withdraw") {
+        const [bk] = await db.select().from(s.basket).where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH)));
+        await withdrawBasket(db, bk.id, "Ananya Kulkarni");
+        return "Ananya withdrew. Her PayPal hold was voided and she won't be charged.";
+      }
+      const r = await simulateNeighbours(db, c.id, 12, actor, { declineLast: choice !== "all" });
       return `${r.joined} more flats approved PayPal holds${r.failed ? `; ${r.failed} card was declined, so that flat isn't in the order and no one else is affected` : ""}.`;
     }
     case "money-on-table":
@@ -101,11 +118,23 @@ export async function performTourStep(db: DB, c: Cycle, actor: string): Promise<
         .from(s.basketLine)
         .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
         .where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH), eq(s.basketLine.status, "won")))
-        .orderBy(s.basketLine.finalUnitCents)
+        .orderBy(choice === "large" ? sql`${s.basketLine.qty} * ${s.basketLine.finalUnitCents} desc` : s.basketLine.finalUnitCents)
         .limit(1);
       if (!line) return "Ananya has nothing delivered to report on.";
-      const r = await reportIssue(db, { basketLineId: line.l.id, householdId: RESIDENT_HH, type: "missing", qty: 1, description: "One pack wasn't in my bag.", actor: "Ananya Kulkarni" });
+      const whole = choice === "large";
+      const r = await reportIssue(db, { basketLineId: line.l.id, householdId: RESIDENT_HH, type: "missing", qty: whole ? line.l.qty : 1, description: whole ? "None of this item was in my delivery." : "One pack wasn't in my bag.", actor: "Ananya Kulkarni" });
       return r.decision === "auto_approved" ? `The Secretary refunded $${(r.refundCents / 100).toFixed(2)} through PayPal.` : "The Secretary passed the claim to the captain.";
+    }
+    case "decide": {
+      const [iss] = await db
+        .select({ id: s.issue.id })
+        .from(s.issue)
+        .innerJoin(s.basketLine, eq(s.issue.basketLineId, s.basketLine.id))
+        .innerJoin(s.basket, eq(s.basketLine.basketId, s.basket.id))
+        .where(and(eq(s.basket.cycleId, c.id), eq(s.basket.householdId, RESIDENT_HH), eq(s.issue.decision, "pending")));
+      const approve = choice !== "reject";
+      await decideIssue(db, iss.id, approve, "Rohan Mehta");
+      return approve ? "The captain approved it: PayPal refunded Ananya." : "The captain rejected the claim. No refund.";
     }
     case "done":
       return "That's the whole week.";

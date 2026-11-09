@@ -46,4 +46,33 @@ describe("guided demo", () => {
     const payouts = await db.select().from(s.payout).where(eq(s.payout.cycleId, CYCLE));
     expect(payouts.length).toBeGreaterThan(0);
   }, 60_000);
+
+  it("lets the reviewer choose: withdraw sends Ananya back to her hold; a big claim goes to the captain", async () => {
+    const fresh = await memoryDb();
+    await seed(fresh);
+    const now = async () => (await fresh.select().from(s.cycle).where(eq(s.cycle.id, CYCLE)))[0];
+    const choices: Record<string, string> = { neighbours: "withdraw", issue: "large", decide: "reject" };
+    const ids: string[] = [];
+    const used = new Set<string>();
+    for (let guard = 0; guard < 25; guard++) {
+      const c = await now();
+      const step = await tourStep(fresh, c);
+      ids.push(step.id);
+      if (!step.action) break;
+      // Each branch is taken once; after that the tour continues on its default path.
+      const pick = !used.has(step.id) ? choices[step.id] : undefined;
+      if (pick) used.add(step.id);
+      await performTourStep(fresh, c, "test", pick);
+    }
+    // Withdrawing voided her hold, so the hold step came round again.
+    expect(ids.filter((x) => x === "hold").length).toBe(2);
+    // The claim over $10 reached the captain, who rejected it: no refund for Ananya.
+    expect(ids).toContain("decide");
+    const [bk] = await fresh.select().from(s.basket).where(and(eq(s.basket.cycleId, CYCLE), eq(s.basket.householdId, "hh_31")));
+    expect(bk.refundedCents).toBe(0);
+    const [rejected] = await fresh.select().from(s.issue).where(eq(s.issue.decision, "rejected"));
+    expect(rejected).toBeTruthy();
+    expect((await now()).phase).toBe("CLOSED");
+    expect((await ledgerTotals(fresh)).balanced).toBe(true);
+  }, 90_000);
 });

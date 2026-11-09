@@ -9,7 +9,7 @@ import { tourJumpAction, tourNextAction } from "@/app/actions";
 import { Spinner } from "./ActionButton";
 
 type Box = { x: number; y: number; w: number; h: number };
-export type SpotStep = { n: number; total: number; title: string; body: string; edge: string[]; action: string | null; target: string | null; here: boolean; jumpTo: "resident" | "captain" | "seller" | "operator"; jumpLabel: string };
+export type SpotStep = { choices: { id: string; label: string; hint: string }[]; n: number; total: number; title: string; body: string; edge: string[]; action: string | null; target: string | null; here: boolean; jumpTo: "resident" | "captain" | "seller" | "operator"; jumpLabel: string };
 
 const PAD = 10;
 const HIDDEN = "tour:hidden";
@@ -114,11 +114,12 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
       }),
     [router],
   );
+  const choose = step.here && step.choices.length > 0;
   const primary = useCallback(() => {
     if (!step.here) go(() => tourJumpAction(step.jumpTo));
-    else if (step.action) go(() => tourNextAction(cycleId));
+    else if (step.action) go(() => tourNextAction(cycleId, step.choices[0]?.id));
     else hide();
-  }, [step.here, step.action, step.jumpTo, cycleId, go, hide]);
+  }, [step.here, step.action, step.jumpTo, step.choices, cycleId, go, hide]);
 
   useEffect(() => {
     if (!open) return;
@@ -180,11 +181,33 @@ export function TourSpotlight({ cycleId, step }: { cycleId: string; step: SpotSt
               )}
             </div>
           )}
+          {choose && (
+            <fieldset className="mt-4" disabled={pending}>
+              <legend className="text-sm font-semibold">Choose what happens</legend>
+              <ul className="mt-2 space-y-2">
+                {step.choices.map((c, i) => (
+                  <li key={c.id}>
+                    <button type="button" ref={i === 0 ? nextRef : undefined} onClick={() => go(() => tourNextAction(cycleId, c.id))} className="w-full rounded-xl border border-line px-3.5 py-2.5 text-left transition-colors hover:border-brand hover:bg-brand-soft disabled:opacity-60">
+                      <span className="block font-semibold">{c.label}</span>
+                      <span className="block text-sm text-muted">{c.hint}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          )}
           <div className="mt-5 flex items-center gap-2">
-            <button ref={nextRef} type="button" className="btn btn-primary" disabled={pending} onClick={primary}>
-              {pending && <Spinner />}
-              {label}
-            </button>
+            {!choose && (
+              <button ref={nextRef} type="button" className="btn btn-primary" disabled={pending} onClick={primary}>
+                {pending && <Spinner />}
+                {label}
+              </button>
+            )}
+            {choose && pending && (
+              <span className="flex items-center gap-2 text-sm text-muted">
+                <Spinner /> Running it for real…
+              </span>
+            )}
             <span className="ml-auto hidden items-center gap-1.5 md:flex">
               <kbd className="kbd">→</kbd>
               <kbd className="kbd">esc</kbd>
