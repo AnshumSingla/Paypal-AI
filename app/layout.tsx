@@ -7,6 +7,8 @@ import { Header } from "./_components/Header";
 const mukta = Mukta({ subsets: ["latin", "devanagari"], weight: ["400", "500", "600", "700"], variable: "--font-mukta", display: "swap" });
 
 export const metadata: Metadata = {
+  // Render sets RENDER_EXTERNAL_URL; social preview images need an absolute base.
+  metadataBase: new URL(process.env.RENDER_EXTERNAL_URL || process.env.APP_BASE_URL || "http://localhost:3000"),
   title: { default: "Collective", template: "%s · Collective" },
   description: "Your housing society buys groceries in bulk together. Approve a maximum through PayPal, and pay only the price the building unlocked.",
 };
