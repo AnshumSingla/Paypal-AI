@@ -55,13 +55,13 @@ export default async function ResidentPage() {
           value={held || settled ? fmt(basket!.basket.ceilingCents) : "None"}
           sentence={held ? "approved, not charged yet" : settled ? "was the most you could pay" : "you approve once, at Confirm"}
         />
-        <Stat icon={<TrendingDown size={20} />} tone="accent" title={settled ? "Charged" : "If cutoff were now"} value={settled ? fmt(paid) : basket?.lines.length ? fmt(estimate) : "-"} sentence={settled ? "the price the building reached" : "falls as neighbours join"} />
+        <Stat icon={<TrendingDown size={20} />} tone="accent" title={settled ? "Charged" : "If cutoff were now"} value={settled ? fmt(paid) : basket?.lines.length ? fmt(estimate) : "Not yet"} sentence={settled ? "the price the building reached" : "falls as neighbours join"} />
         <Stat icon={<PiggyBank size={20} />} tone="success" title="Saved against retail" value={settled && retailKept > 0 ? fmt(Math.round(retailKept - paid)) : "After cutoff"} sentence={settled && retailKept > 0 ? `${Math.round(((retailKept - paid) / retailKept) * 100)}% less` : undefined} />
       </StatRow>
 
       {cycle.phase === "COLLECT" && (
         <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-          <div id="list" className="scroll-mt-24">
+          <div id="list" className="h-fit scroll-mt-24">
             <BasketAssistant cycleId={cycle.id} />
           </div>
           <Panel title="My needs this week" description="Not a commitment. You confirm with exact prices on Wednesday." aside={<span className="chip bg-surface-2 text-muted">{needs.length}</span>} flush>

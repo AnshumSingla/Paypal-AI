@@ -42,8 +42,8 @@ export function Stat({ icon, tone = "ink", title, value, sentence, href, action 
         <span className="font-semibold">{title}</span>
       </div>
       <div className="flex-1 px-5 pb-5 pt-4">
-        <span className="num text-3xl font-semibold tracking-tight">{value}</span>
-        {sentence ? <span className="ml-2 text-muted">{sentence}</span> : null}
+        <div className="num text-3xl font-semibold tracking-tight">{value}</div>
+        {sentence ? <p className="mt-1 text-sm text-muted">{sentence}</p> : null}
       </div>
       {href && action ? (
         <Link href={href} className="flex items-center gap-1 border-t border-line px-5 py-3 text-sm font-semibold text-brand hover:bg-surface-2">
