@@ -1,48 +1,84 @@
-# PoolCart
+# Collective
 
-**Your building buys groceries together. Everyone pays wholesale.**
+**Your housing society buys groceries in bulk, together.** Each resident approves one PayPal hold for the most they'd pay. An AI Society Secretary gets trusted local suppliers to compete and uses the money already approved to push prices down. At cutoff PayPal charges only the price the whole building unlocked.
 
-PoolCart is an AI-run group-buying platform for apartment communities, built for the PayPal AI Hackathon. Residents' weekly grocery lists, typed or photographed, are turned into pooled orders. Local sellers bid volume-tiered prices on that pooled demand. Each resident approves **one PayPal hold for the highest possible price**, and at cutoff PoolCart **captures only the price the whole building unlocked**. Then it refunds issues and pays sellers out through PayPal.
+Built for the PayPal AI Hackathon. PayPal sandbox only: no real money moves.
 
-> Sandbox only. No real money moves.
+<!-- Add before submitting: hosted demo URL, YouTube video link, and an "Evidence from a real building" section. -->
 
 ## The problem
 
-Forty households in a building buy the same eggs, rice and oil every week, separately, at retail. Wholesalers offer 10–30% less, but only above a minimum order quantity (MOQ) that no single household reaches. Today people pool orders by hand in group chats: one volunteer collects lists, chases payments and fronts the money. That stops working at about 15 households.
+Forty flats in a society buy the same rice, dal, oil and eggs every week, one by one, at retail. Wholesalers charge 10 to 30% less, but only above a minimum order no single flat reaches. Today a volunteer pools orders in a group chat: collects lists, chases payments, haggles, and fronts the money. That stops working at about fifteen households, and the volunteer carries the risk.
 
-## How it works
+Collective does the volunteer's job with an AI agent, and makes PayPal carry the money risk instead of a neighbour.
 
-| Phase | What happens | AI | PayPal |
+## How a week works
+
+| Step | What happens | AI | PayPal |
 |---|---|---|---|
-| 1. Collect | Residents type a list or snap a photo of a handwritten one | **Basket Assistant** (Claude vision + structured outputs) matches items to products (Channel3 for unknown items) and blocks restricted goods | — |
-| 2. Bid | Needs become one pool per product. Sellers see totals only and bid MOQ + price tiers | **Pool Builder** writes seller briefs; **Pricing Copilot** drafts tier sheets; **Bid Analyst** scores and explains bids for the captain | — |
-| 3. Confirm & pay | Residents confirm a basket; live tier bars show "3 more → $3.57" | — | **Orders v2 `intent=AUTHORIZE`**: one hold at ceiling prices |
-| 4. Cutoff | Pools at or above MOQ succeed; first-committed-first-served if over capacity | — | **Partial final capture** at the unlocked price; **void** when nothing succeeded |
-| 5. Delivery & issues | Captain checks the drop manifest and hands out by unit; residents report problems with photos | **Issue Resolver** proposes a refund (capped in code; auto-approved up to $10) | **Refunds** (partial) |
-| 6. Payout | After the 24h window | — | **Payouts** net of commission and refunds; **Subscriptions** for seller plans |
+| 1. Collect | Residents type a list or photograph a handwritten one | Basket Assistant (Claude vision) turns it into products and blocks restricted items; Channel3 matches unknown items and gives a retail price | |
+| 2. Bid | Each product becomes a pool. Suppliers see totals only and bid a ladder of prices that drop as the order grows | Bids are scored in code (price 40, trust 45, reachable minimum 15); Claude explains the ranking | |
+| 3. Confirm | Each resident approves **one hold for the highest price** their items could cost. Neighbours join and the price falls for everyone | The **Society Secretary** takes the authorized dollars to each supplier and asks for a lower price at that quantity | Orders v2 `intent=AUTHORIZE`, then authorize |
+| 4. Cutoff | Pools that reached their minimum succeed; each hold is charged at the final price | | Partial capture with `final_capture: true`; void when nothing succeeded |
+| 5. Delivery | The captain checks the drop. Residents report problems with a photo | The Secretary refunds plausible claims up to $10 itself; larger or doubtful ones go to the captain | Refunds |
+| 6. Payout | After 24 hours, suppliers are paid minus commission and refunds | | Payouts; Subscriptions for supplier plans; webhooks |
 
-**The rule residents see:** you'll never pay more than you approved, and you usually pay less.
+**The rule residents see:** you never pay more than you approved, and you usually pay less.
 
-### Design rules
-- **AI proposes, code moves money.** No agent can call a PayPal endpoint that moves money. Captures, voids, refunds and payouts run only in the deterministic engine (`lib/engine`) on state transitions. Every AI output is schema-validated and logged in an AI decision log.
-- **Never capture more than the hold**, and capture inside PayPal's 3-day honor period.
-- **Double-entry ledger** for every capture, fee, refund, commission and payout. The operator page shows whether it balances.
-- **Works without keys:** with no PayPal, Claude or Channel3 keys, the app uses an in-process PayPal mock that enforces the same rules and rule-based AI fallbacks. The header shows which mode is active.
+## Three ideas that make it different
 
-## Tools used
+1. **The PayPal hold is the agent's budget.** A spending limit written into a prompt is only a suggestion. Here the limit is an authorization PayPal enforces: the platform cannot capture more than each resident approved, whatever any agent decides.
+2. **Money on the table.** A group chat can only say "we'd like a discount". The Secretary can say "19 households have $168 authorized in PayPal for 43 packs of eggs; will you lower the price at 43?" A supplier may add a cheaper price break, never below its own floor, and the first price (what every hold was sized on) never changes, so every charge still fits its hold.
+3. **Trust beats cheap.** Each supplier's trust score comes from facts the system verifies itself: lines delivered and complaints upheld, smoothed so two good orders don't outrank two hundred, and weighted to recent weeks. The captain sees lines like *"Recommend Annapurna Kirana Mart despite costing $0.52 more per pack than Deccan Staples Co.: trust 88/100 against 65/100."*
 
-| Tool | How PoolCart uses it |
+## Who may do what
+
+| Action | Who | Limit enforced in code |
+|---|---|---|
+| Read lists, match products, rank bids, explain | AI | Output is schema-checked; scores are computed in code |
+| Ask suppliers for a better price | Society Secretary | Prices can only fall; never below the supplier's floor; first price fixed |
+| Refund a delivery problem | Society Secretary | At most $10, never more than was charged for the item, one refund per issue, at most 3 automatic refunds per household in 30 days |
+| Larger refunds, rejected claims | Captain | Human decision |
+| Approve a hold | Resident | Explicit PayPal approval (or the sandbox test card) |
+| Capture, void, pay out | Settlement engine only | Capture never exceeds the hold; the double-entry ledger must balance |
+
+No agent has a capture, void or payout tool. Every AI decision is logged with the model that made it.
+
+## PayPal integration
+
+| Capability | API | Where |
+|---|---|---|
+| Hold the maximum | `POST /v2/checkout/orders` with `intent: AUTHORIZE`, then `/authorize` | `lib/paypal/gateway.ts`, `lib/engine/basket.ts` |
+| Charge the unlocked price | `POST /v2/payments/authorizations/{id}/capture` with `final_capture: true` | `lib/engine/settlement.ts` |
+| Release a failed pool | `POST /v2/payments/authorizations/{id}/void` | `lib/engine/settlement.ts` |
+| Check a hold | `GET /v2/payments/authorizations/{id}` ("Check this with PayPal" on the receipt) | `app/actions.ts` |
+| Refund a problem | `POST /v2/payments/captures/{id}/refund` | `lib/engine/refunds.ts` |
+| Pay suppliers | `POST /v1/payments/payouts`, `GET /v1/payments/payouts/{batch}` | `lib/engine/payouts.ts` |
+| Supplier plans | Catalog products, billing plans, subscriptions | `lib/paypal/subscriptions.ts` |
+| Webhooks | `POST /v1/notifications/verify-webhook-signature`, event de-duplication | `app/api/webhooks/paypal/route.ts` |
+| Checkout UI | `@paypal/react-paypal-js` PayPal Buttons | `app/resident/Checkout.tsx` |
+
+Every POST carries a `PayPal-Request-Id`, so retries never double-charge.
+
+## AI
+
+- **Society Secretary** (`lib/ai/secretary.ts`): one Claude agent using the Anthropic SDK tool runner. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It acts on events (a reported problem, holds coming in) and answers questions from every role.
+- **Basket Assistant** (photo and text lists), **Pricing Copilot** (suggested price ladders for suppliers), **bid explanations**, **issue assessment** (photo checks), and an **AG Studio analyst** that builds charts from a question.
+- Model `claude-opus-5-5` with structured outputs and server-side refusal fallbacks.
+- **Works without a key:** every agent has a rule-based fallback, so the whole week runs offline. A public demo is capped at `AI_CALLS_PER_HOUR` (default 300) Claude calls.
+
+## Sponsor tools
+
+| Tool | Use |
 |---|---|
-| **PayPal REST APIs (sandbox)** | Orders v2 (AUTHORIZE), Payments v2 authorizations (authorize, capture with `final_capture`, void, get), captures (refund), Payouts v1, Billing Plans + Subscriptions v1, Webhooks v1 (signature verification), PayPal JS SDK Buttons |
-| **Claude** (`claude-opus-5-5`, Anthropic SDK) | Basket Assistant (text + photo), Pool Builder, Pricing Copilot, Bid Analyst, Issue Resolver (photo), and the AG Studio analyst. Uses structured outputs, effort tuning and server-side refusal fallbacks |
-| **AG Grid / AG Studio** | Demand board, ledger and AI log grids; operator analytics dashboard with a **Claude-backed AG Studio AI adapter** (`app/ops/dashboard/claude-adapter.ts`) |
-| **Channel3** | Product search to identify unfamiliar items and get a retail reference price, which is what "saved vs retail" is measured against |
-| **Render** | `render.yaml` blueprint: web service + managed Postgres |
-| **APIMatic Context Plugin + PayPal AI Toolkit** | Used in Claude Code while building the PayPal integration |
+| **AG Grid / AG Studio** | Demand board with trust, in-cell "next price" progress and flashing price changes; ledger and AI decision grids; AG Studio analytics with a supplier-trust page and a Claude-backed analyst (`app/ops/dashboard/claude-adapter.ts`) |
+| **Channel3** | Identifies unfamiliar products and supplies the retail price that savings are measured against |
+| **Render** | `render.yaml` blueprint: web service and managed Postgres |
+| **APIMatic Context Plugin, PayPal AI Toolkit** | Used in Claude Code while building the PayPal integration |
 
 ## Run it locally
 
-Requires Node.js 22+. No database to install: locally PoolCart uses **PGlite** (Postgres compiled to WASM) stored in `./.data`.
+Requires Node.js 22+. No database to install: locally Collective uses PGlite (Postgres compiled to WebAssembly) stored in `./.data`.
 
 ```bash
 npm install
@@ -50,30 +86,24 @@ cp .env.example .env.local   # optional: add keys (see below)
 npm run dev
 ```
 
-Open http://localhost:3000 and pick a persona. Use the **Demo clock** bar to move the week forward:
+Open http://localhost:3000 and pick who to view as. A **guided demo** bar at the top walks the whole week with one button per step: Ananya's list, supplier bids, her PayPal hold, neighbours joining, the Secretary negotiating, cutoff, a refund, and supplier payouts. **Reset** returns to the start of Week 46, with three settled past weeks already in place.
 
-1. **Resident:** "Use a sample list" → Read my list → Add.
-2. **Close collection** → as **Seller**, "✨ Suggest tiers" → Submit bid. Click **+ Competing seller bids**.
-3. **Captain:** review AI-ranked bids → **Close bidding**.
-4. **Resident:** add items, then **Approve hold with PayPal** → **+ 12 neighbours confirm** (twice) and watch the tier bars move.
-5. **Cutoff** → the resident sees held vs charged vs released. **Confirm handover** → report a problem → refund.
-6. **Close issue window** → sellers paid out. **Operator** → ledger, AI log, **AG Studio dashboard**.
-
-**Reset** returns everything to the start of Week 46.
+To start over from the command line, stop the dev server and run `npm run db:reset`.
 
 ### Keys (`.env.local`)
 
 | Variable | Where | Without it |
 |---|---|---|
-| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | developer.paypal.com → Apps & Credentials → Sandbox app (enable Payouts) | In-process mock with the same rules |
-| `PAYPAL_SANDBOX_PERSONAL_EMAIL` | Sandbox personal account; receives the demo seller's payouts | Placeholder email |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | developer.paypal.com > Apps & Credentials > Sandbox app (enable Payouts) | Built-in PayPal stand-in with the same rules |
+| `PAYPAL_SANDBOX_PERSONAL_EMAIL` | A sandbox personal account; receives supplier payouts | Placeholder email |
 | `PAYPAL_WEBHOOK_ID` | Webhook pointing at `/api/webhooks/paypal` | Webhooks rejected |
 | `ANTHROPIC_API_KEY` | console.anthropic.com | Rule-based fallbacks; photo reading off |
-| `CHANNEL3_API_KEY` | trychannel3.com/developers (promo `PAYPAL-HACKATHON-2026`) | Local catalog only |
+| `CHANNEL3_API_KEY` | trychannel3.com/developers | Local catalogue only |
 | `AG_STUDIO_LICENSE` | AG Studio trial key | Trial watermark |
 | `DATABASE_URL` | Postgres URL (Render sets it) | Embedded PGlite |
+| `PAYPAL_MODE=mock`, `AI_MODE=rules` | Optional | Force offline mode even when keys are set |
 
-In sandbox mode, residents approve with a **sandbox personal account** in the real PayPal popup. Simulated neighbours place real sandbox card holds with PayPal's published test card.
+With sandbox keys, residents approve in the real PayPal popup with a sandbox personal account. Judges without a sandbox login can use **Hold with a PayPal sandbox test card**, which places the same real sandbox hold with PayPal's published test card.
 
 ### Tests
 
@@ -81,26 +111,28 @@ In sandbox mode, residents approve with a **sandbox personal account** in the re
 npm test
 ```
 
-Covers tier pricing, MOQ failure, the capacity cut-off, and a full week on an in-memory Postgres with the PayPal mock: hold → withdraw/void → re-confirm → partial capture ≤ hold → auto refund → payouts net of commission → balanced ledger.
+44 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; and the guided demo walking all twelve steps to a balanced ledger.
 
-### Day-0 sandbox checks
-
-`spikes/` holds standalone scripts that exercise the real sandbox: hold → partial final capture → refund, void, decline trigger, wallet approval, Payouts idempotency, Channel3 and Claude. Run `cd spikes && npm install && npm run all`.
+`spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts, Channel3 and Claude. Run `cd spikes && npm install && npm run all`.
 
 ## Deploy on Render
 
-New → Blueprint → select this repo. `render.yaml` creates the web service and a Postgres database, and prompts for the secrets.
-
-## Project docs
-
-- [docs/01-PRODUCT.md](docs/01-PRODUCT.md): users, cycle, AI features, business model
-- [docs/02-ARCHITECTURE.md](docs/02-ARCHITECTURE.md): diagrams, data model, state machines, settlement algorithm, PayPal map
-- [docs/03-POLICIES.md](docs/03-POLICIES.md): money handling, pricing, refunds, sellers, privacy, AI guardrails
-- [docs/04-BUILD-PLAN.md](docs/04-BUILD-PLAN.md): plan, demo script, submission checklist
+New > Blueprint > select this repo. `render.yaml` creates the web service and a Postgres database and prompts for the secrets.
 
 ## Honest limits
 
-Sandbox only. In production, the platform would use PayPal Multiparty (sellers as merchants, `platform_fees`) instead of acting as merchant of record with Payouts, which needs partner approval. Taxes and seller KYC are out of scope. PayPal doesn't support domestic INR payments, so the demo runs in USD.
+- Sandbox only. In production, suppliers would be onboarded merchants through PayPal Multiparty with `platform_fees` for commission, which needs partner approval; this demo acts as merchant of record and pays suppliers with Payouts.
+- PayPal doesn't process domestic rupee payments, so the Pune demo runs in US dollars. An India launch needs a local payment partner.
+- Phases advance from the captain's controls or the demo bar; there is no scheduled job.
+- If one resident's capture fails at cutoff, that basket's items are released; other baskets in the same pool are not re-priced.
+- Taxes, supplier KYC and delivery logistics are out of scope.
+
+## Project docs
+
+- [docs/01-PRODUCT.md](docs/01-PRODUCT.md): users, the weekly cycle, AI features, business model
+- [docs/02-ARCHITECTURE.md](docs/02-ARCHITECTURE.md): data model, state machines, settlement, PayPal map
+- [docs/03-POLICIES.md](docs/03-POLICIES.md): money handling, pricing, refunds, trust, AI guardrails
+- [docs/04-BUILD-PLAN.md](docs/04-BUILD-PLAN.md): status and roadmap
 
 ## License
 
