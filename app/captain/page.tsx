@@ -9,6 +9,8 @@ import { advancePhase, decideIssueAction, fundedAsksAction, pickWinnerAction } f
 import { SecretaryPanel } from "@/app/_components/SecretaryPanel";
 import { trustScores } from "@/lib/engine/trust";
 import { CycleBar } from "@/app/_components/CycleBar";
+import { WeekTimeline } from "@/app/_components/WeekTimeline";
+import { weekSchedule } from "@/lib/schedule";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { ActivityFeed, Kpi } from "@/app/_components/Bits";
 import { PoolGrid } from "./PoolGrid";
@@ -83,6 +85,9 @@ export default async function CaptainPage() {
         )}
         {cycle.phase === "FULFIL" && <DropManifest db={db} cycleId={cycle.id} cycleIdForAdvance={cycle.id} />}
         {["RESOLVE", "CLOSED"].includes(cycle.phase) && <IssuesQueue db={db} cycleId={cycle.id} />}
+        <div className="mt-6">
+          <WeekTimeline schedule={weekSchedule(cycle, society.dropPoint)} />
+        </div>
       </div>
       <aside className="space-y-4">
         <SecretaryPanel db={db} cycleId={cycle.id} role="captain" />

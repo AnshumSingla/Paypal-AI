@@ -6,6 +6,8 @@ import { payMode } from "@/lib/paypal/gateway";
 import { fmt } from "@/lib/util/money";
 import { removeNeedAction, withdrawAction, markReceivedAction, testCardHoldAction } from "@/app/actions";
 import { CycleBar } from "@/app/_components/CycleBar";
+import { WeekTimeline } from "@/app/_components/WeekTimeline";
+import { weekSchedule } from "@/lib/schedule";
 import { ActionButton } from "@/app/_components/ActionButton";
 import { TierBar } from "@/app/_components/TierBar";
 import { BasketAssistant } from "./BasketAssistant";
@@ -190,6 +192,9 @@ export default async function ResidentPage() {
 
       <div className="mt-8 max-w-2xl">
         <SecretaryPanel db={db} cycleId={cycle.id} role="resident" />
+      </div>
+      <div className="mt-8">
+        <WeekTimeline schedule={weekSchedule(cycle, society.dropPoint)} />
       </div>
     </div>
   );
