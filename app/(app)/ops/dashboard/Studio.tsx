@@ -4,7 +4,7 @@ import { AgStudioAiModule, type AgAiHarnessSetup, createAiHarness } from "ag-stu
 import { AgStudio, AgStudioProvider } from "ag-studio-react";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { buildStudioData, defaultReport, poolcartStudioTheme } from "./studio-config";
-import { claudeAdapter } from "./claude-adapter";
+import { claudeAdapter } from "./ai-adapter";
 
 const noSub = () => () => {};
 
