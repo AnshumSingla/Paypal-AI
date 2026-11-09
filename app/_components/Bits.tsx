@@ -21,7 +21,7 @@ export function ActivityFeed({ items }: { items: (typeof s.activity.$inferSelect
           <li key={a.id} className="flex gap-2 text-xs">
             <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${KIND_DOT[a.kind]}`} />
             <span>
-              <span className="text-muted">{a.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {a.actor}</span>
+              <span className="text-muted">{a.actor}, {a.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
               <br />
               {a.message}
             </span>

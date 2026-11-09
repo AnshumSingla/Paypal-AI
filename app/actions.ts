@@ -115,7 +115,7 @@ export async function saveNeedsAction(cycleId: string, lines: BasketLineDraft[],
     }
     const blocked = lines.filter((l) => l.restricted).length;
     await log(db, cycleId, user.name, "resident", `Added ${usable.length} item(s) to this week's needs${blocked ? `; ${blocked} restricted item(s) were not added` : ""}.`);
-    return { message: `${usable.length} item(s) added${blocked ? `; ${blocked} restricted item(s) skipped (Policies §15)` : ""}.` };
+    return { message: `${usable.length} item(s) added${blocked ? `; ${blocked} item(s) that can't be sold here were skipped` : ""}.` };
   });
 }
 
@@ -264,6 +264,6 @@ export async function setSellerStatusAction(sellerId: string, status: "approved"
   return guard(async () => {
     const { db, user } = await require(["operator"]);
     await db.update(s.seller).set({ status }).where(eq(s.seller.id, sellerId));
-    await log(db, null, user.name, "seller", `Seller ${sellerId} ${status}.`);
+    await log(db, null, user.name, "seller", `Supplier ${sellerId} ${status}.`);
   });
 }

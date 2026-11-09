@@ -21,7 +21,7 @@ export function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$inferS
         <div>
           <div className="label">{societyName}</div>
           <h1 className="text-xl font-semibold">
-            {cycle.weekLabel} · <span className="text-brand">{PHASE_LABEL[cycle.phase]}</span>
+            {cycle.weekLabel}: <span className="text-brand">{PHASE_LABEL[cycle.phase]}</span>
           </h1>
         </div>
         {demoMode() && (

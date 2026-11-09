@@ -1,12 +1,12 @@
 "use client";
-// A1 Basket Assistant UI: type a list or snap a photo → AI-structured lines → resident edits → save.
+// Basket Assistant UI: type a list or photograph a handwritten one; AI turns it into products; the resident checks and saves.
 import { useState, useTransition } from "react";
 import { parseListAction, saveNeedsAction } from "@/app/actions";
 import type { BasketLineDraft } from "@/lib/ai/agents/basket";
 import { Spinner, Toast } from "@/app/_components/ActionButton";
 import { fileToDataUrl } from "@/app/_components/image";
 
-const SAMPLE = "2 dozen eggs, any brand\n10lb India Gate basmati\ncanola oil big bottle\n1 gal whole milk x2\ndish soap\na 12 pack of beer";
+const SAMPLE = "2 dozen eggs, any brand\n10lb India Gate basmati\ntoor dal 4 lb\ncanola oil big bottle\n1 gal whole milk x2\ndish soap\na 12 pack of beer";
 
 export function BasketAssistant({ cycleId }: { cycleId: string }) {
   const [text, setText] = useState("");
@@ -40,19 +40,19 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
     <div className="card p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">What do you need this week?</h2>
-        <span className="chip bg-info-soft text-info">Basket Assistant · AI</span>
+        <span className="text-xs text-muted">Typed or handwritten lists</span>
       </div>
       {!lines ? (
         <div className="mt-4 grid gap-4 md:grid-cols-[1fr_220px]">
           <div>
-            <textarea className="input min-h-36 font-mono text-sm" placeholder={SAMPLE} value={text} onChange={(e) => setText(e.target.value)} />
-            <button className="mt-1 text-xs font-semibold text-brand underline" onClick={() => setText(SAMPLE)}>
+            <textarea className="input min-h-36 text-sm leading-relaxed" placeholder={SAMPLE} value={text} onChange={(e) => setText(e.target.value)} />
+            <button className="mt-1.5 text-xs font-medium text-brand underline underline-offset-2" onClick={() => setText(SAMPLE)}>
               Use a sample list
             </button>
           </div>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line p-3 text-center text-sm text-muted hover:bg-brand-soft">
-            {photo ? <img src={photo} alt="Your list" className="max-h-36 rounded-lg object-contain" /> : <span className="text-3xl">📷</span>}
-            <span className="font-semibold">{photo ? "Change photo" : "Snap or upload a photo of your list"}</span>
+            {photo ? <img src={photo} alt="Your list" className="max-h-36 rounded-lg object-contain" /> : <CameraIcon />}
+            <span className="font-medium">{photo ? "Change photo" : "Photograph your handwritten list"}</span>
             <input type="file" accept="image/*" capture="environment" className="hidden" onChange={async (e) => e.target.files?.[0] && setPhoto(await fileToDataUrl(e.target.files[0]))} />
           </label>
           <div className="md:col-span-2">
@@ -64,8 +64,7 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
       ) : (
         <div className="mt-4 space-y-3">
           <div className="text-xs text-muted">
-            {meta?.source === "ai" ? `Read by ${meta.model}.` : "Read with the rule-based fallback (no AI key)."} Check each line, then add them to this week&apos;s needs.
-            {meta?.error ? <span className="text-danger"> AI error: {meta.error}</span> : null}
+            {meta?.source === "ai" ? `Read by ${meta.model}.` : meta?.error ? "AI was unavailable, so simple matching rules read this list." : "Read with simple matching rules (AI is off)."} Check each line, then add them to this week&apos;s needs.
           </div>
           <ul className="divide-y divide-line rounded-xl border border-line">
             {lines.map((l, i) => (
@@ -80,21 +79,21 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
                   className="input !w-16 !py-1"
                 />
                 <div className="min-w-48 flex-1">
-                  <div className="font-semibold">
-                    {l.productTitle ?? l.productQuery} {l.packSize ? <span className="text-muted">· {l.packSize}</span> : null}
+                  <div className="font-medium">
+                    {l.productTitle ?? l.productQuery} {l.packSize ? <span className="font-normal text-muted">{l.packSize}</span> : null}
                   </div>
                   <div className="text-xs text-muted">
-                    “{l.raw}”{l.brand ? ` · brand: ${l.brand}` : " · any brand"}
-                    {l.matchedVia === "channel3" ? " · matched via Channel3" : ""}
+                    You wrote “{l.raw}”. {l.brand ? `Brand: ${l.brand}.` : "Any brand."}
+                    {l.matchedVia === "channel3" ? " Matched with Channel3." : ""}
                   </div>
-                  {l.clarification && !l.restricted ? <div className="text-xs text-[#8a5a12]">? {l.clarification}</div> : null}
+                  {l.clarification && !l.restricted ? <div className="text-xs text-[#7d5a14]">{l.clarification}</div> : null}
                 </div>
                 {l.restricted ? (
-                  <span className="chip bg-danger-soft text-danger">Not allowed on PoolCart</span>
+                  <span className="chip bg-danger-soft text-danger">Can&apos;t be sold here</span>
                 ) : l.productId ? (
-                  <span className="chip bg-brand-soft text-brand-dark">retail {l.retailRefCents ? `$${(l.retailRefCents / 100).toFixed(2)}` : "?"}</span>
+                  <span className="num chip bg-brand-soft text-brand-dark">{l.retailRefCents ? `Retail $${(l.retailRefCents / 100).toFixed(2)}` : "Retail price unknown"}</span>
                 ) : (
-                  <span className="chip bg-accent-soft text-[#8a5a12]">No match</span>
+                  <span className="chip bg-accent-soft text-[#7d5a14]">No match found</span>
                 )}
                 <button className="text-xs text-muted hover:text-danger" onClick={() => setLines(lines.filter((_, j) => j !== i))}>
                   Remove
@@ -118,5 +117,14 @@ export function BasketAssistant({ cycleId }: { cycleId: string }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
   );
 }

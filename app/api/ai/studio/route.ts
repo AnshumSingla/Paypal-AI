@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     max_tokens: 16000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default" as const,
-    system: `${system}${steer}\nYou are the analyst inside PoolCart's operations dashboard (AG Studio). Data is PoolCart sandbox data; amounts are USD.`,
+    system: `${system}${steer}\nYou are the analyst inside Collective's operations dashboard (AG Studio). Collective runs bulk grocery buying for an Indian housing society; data is PayPal sandbox data; amounts are USD.`,
     messages: messages as Anthropic.Beta.Messages.BetaMessageParam[],
     ...(tools.length ? { tools, tool_choice: req.toolChoice === "none" ? { type: "none" as const } : { type: "auto" as const } } : {}),
     output_config: { effort: "medium" as const, ...(json ? { format: { type: "json_schema" as const, schema: json.schema as Record<string, unknown> } } : {}) },

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         case "BILLING.SUBSCRIPTION.SUSPENDED":
         case "BILLING.SUBSCRIPTION.PAYMENT.FAILED": {
           await db.update(s.seller).set({ subscriptionStatus: event.event_type.split(".").at(-1) }).where(eq(s.seller.paypalSubscriptionId, r.id ?? r.billing_agreement_id ?? "-"));
-          await log(db, null, "PayPal webhook", "seller", `Subscription ${r.id ?? ""}: ${event.event_type}. Downgrade after the 7-day grace period (Policies §9.5).`);
+          await log(db, null, "PayPal webhook", "seller", `Subscription ${r.id ?? ""}: ${event.event_type}. The supplier moves to the free plan after a 7-day grace period.`);
           break;
         }
         default:
