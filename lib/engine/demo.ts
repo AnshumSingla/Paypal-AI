@@ -86,8 +86,9 @@ export async function simulateCompetingBids(db: DB, cycleId: string, includePers
       }
     }
   }
-  // One ranking (and one AI explanation) per pool, not per bid.
-  for (const { p } of open) await rankPool(db, p.id);
+  // One ranking (and one AI explanation) per pool, not per bid; four pools at a time so a reviewer
+  // isn't kept waiting, while staying inside free-tier rate limits.
+  for (let i = 0; i < open.length; i += 4) await Promise.all(open.slice(i, i + 4).map(({ p }) => rankPool(db, p.id)));
   return n;
 }
 
