@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { activatePlanAction } from "@/app/actions";
 import { Spinner, Toast } from "@/app/_components/ActionButton";
+import { Panel } from "@/app/_components/ui";
 
 const PLANS = [
   { id: "starter", name: "Starter", price: "Free", commission: "8%", perks: "Bid on open pools" },
@@ -17,66 +18,68 @@ export function PlanCard({ current, mode, clientId, planIds }: { current: string
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Your plan</h2>
-        <span className="text-xs text-muted">Billed with PayPal Subscriptions</span>
-      </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+    <Panel id="plan" title="Your plan" description="Billed monthly with PayPal Subscriptions." flush>
+      <ul className="divide-y divide-line">
         {PLANS.map((p) => (
-          <div key={p.id} className={`rounded-xl border p-3 text-sm ${current === p.id ? "border-brand bg-brand-soft" : "border-line"}`}>
-            <div className="flex justify-between">
-              <span className="font-medium">{p.name}</span>
-              <span>{p.price}</span>
+          <li key={p.id} className={`flex items-start gap-4 px-6 py-4 ${current === p.id ? "bg-brand-soft" : ""}`}>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold">{p.name}</span>
+                <span className="text-sm text-muted">{p.price}</span>
+                {current === p.id ? <span className="chip bg-brand text-on-brand">Current</span> : null}
+              </div>
+              <p className="mt-0.5 text-sm text-muted">{p.perks}.</p>
+              {current !== p.id && p.id !== "starter" ? (
+                <button type="button" className="btn btn-ghost mt-2 !py-1 text-sm" aria-pressed={choice === p.id} onClick={() => setChoice(p.id)}>
+                  Upgrade to {p.name}
+                </button>
+              ) : null}
             </div>
-            <div className="text-xl font-semibold">{p.commission}</div>
-            <div className="text-xs text-muted">commission. {p.perks}.</div>
-            {current === p.id ? (
-              <span className="chip mt-2 bg-brand text-on-brand">Current</span>
-            ) : p.id !== "starter" ? (
-              <button className="btn btn-ghost mt-2 !py-1 text-xs" onClick={() => setChoice(p.id)}>
-                Upgrade
-              </button>
-            ) : null}
-          </div>
+            <div className="text-right">
+              <div className="num text-xl font-semibold">{p.commission}</div>
+              <div className="text-xs text-muted">commission</div>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
       {choice && (
-        <div className="mt-4 max-w-sm">
-          {mode === "sandbox" && clientId && planIds ? (
-            <PayPalScriptProvider options={{ clientId, vault: true, intent: "subscription", components: "buttons" }}>
-              <PayPalButtons
-                style={{ label: "subscribe", height: 40 }}
-                createSubscription={(_d, actions) => actions.subscription.create({ plan_id: planIds[choice] })}
-                onApprove={async (data) => {
-                  const r = await activatePlanAction(choice, data.subscriptionID ?? undefined);
-                  setMsg(r.ok ? { ok: true, text: r.message ?? "Upgraded." } : { ok: false, text: r.error });
-                  setChoice(null);
-                }}
-              />
-            </PayPalScriptProvider>
-          ) : (
-            <button
-              className="btn w-full !bg-[#ffc439] !text-[#111]"
-              disabled={pending}
-              onClick={() =>
-                start(async () => {
-                  const r = await activatePlanAction(choice);
-                  setMsg(r.ok ? { ok: true, text: r.message ?? "Upgraded." } : { ok: false, text: r.error });
-                  setChoice(null);
-                })
-              }
-            >
-              {pending && <Spinner />} Subscribe with PayPal <span className="chip bg-white/60">mock</span>
-            </button>
-          )}
+        <div className="border-t border-line px-6 py-4">
+          <div className="max-w-sm">
+            {mode === "sandbox" && clientId && planIds ? (
+              <PayPalScriptProvider options={{ clientId, vault: true, intent: "subscription", components: "buttons" }}>
+                <PayPalButtons
+                  style={{ label: "subscribe", height: 40 }}
+                  createSubscription={(_d, actions) => actions.subscription.create({ plan_id: planIds[choice] })}
+                  onApprove={async (data) => {
+                    const r = await activatePlanAction(choice, data.subscriptionID ?? undefined);
+                    setMsg(r.ok ? { ok: true, text: r.message ?? "Upgraded." } : { ok: false, text: r.error });
+                    setChoice(null);
+                  }}
+                />
+              </PayPalScriptProvider>
+            ) : (
+              <button
+                className="btn w-full !bg-[#ffc439] !text-[#111]"
+                disabled={pending}
+                onClick={() =>
+                  start(async () => {
+                    const r = await activatePlanAction(choice);
+                    setMsg(r.ok ? { ok: true, text: r.message ?? "Upgraded." } : { ok: false, text: r.error });
+                    setChoice(null);
+                  })
+                }
+              >
+                {pending && <Spinner />} Subscribe with PayPal <span className="chip bg-white/60">mock</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
       {msg ? (
-        <div className="mt-2">
+        <div className="border-t border-line px-6 py-3">
           <Toast ok={msg.ok} text={msg.text} />
         </div>
       ) : null}
-    </div>
+    </Panel>
   );
 }
