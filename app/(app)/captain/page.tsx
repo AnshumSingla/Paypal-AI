@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { Boxes, Check, CircleCheck, HandCoins, PiggyBank, ShoppingBasket, Sparkles, TriangleAlert, Users, Wallet } from "lucide-react";
 import { getSession } from "@/lib/session";
 import * as s from "@/lib/db/schema";
 import { activityFeed, cycleMoney, poolsView, societyContext } from "@/lib/queries";
@@ -12,19 +13,35 @@ import { CycleBar } from "@/app/_components/CycleBar";
 import { WeekTimeline } from "@/app/_components/WeekTimeline";
 import { weekSchedule } from "@/lib/schedule";
 import { ActionButton } from "@/app/_components/ActionButton";
-import { ActivityFeed, Kpi } from "@/app/_components/Bits";
+import { ActivityFeed } from "@/app/_components/Bits";
+import { Empty, Panel, Stat, StatRow } from "@/app/_components/ui";
 import { PoolGrid } from "./PoolGrid";
 import { AutoRefresh } from "@/app/_components/AutoRefresh";
 
 export const metadata: Metadata = { title: "Captain console" };
 
 const ISSUE_DECISION: Record<string, string> = { pending: "Waiting for you", auto_approved: "Refunded by the Secretary", approved: "Refunded", rejected: "Rejected" };
+const ISSUE_TONE: Record<string, string> = { pending: "bg-accent-soft text-accent-ink", rejected: "bg-danger-soft text-danger", approved: "bg-success-soft text-success", auto_approved: "bg-success-soft text-success" };
+
+/** Where the pools card points, by phase: the section the captain acts on next. */
+const PHASE_TARGET: Record<string, { href: string; action: string }> = {
+  BID: { href: "#bids", action: "Review bids" },
+  COMMIT: { href: "#money", action: "Ask for better prices" },
+  FULFIL: { href: "#delivery", action: "Check the delivery" },
+  RESOLVE: { href: "#issues", action: "Decide issues" },
+  CLOSED: { href: "#issues", action: "See issues" },
+};
 
 export default async function CaptainPage() {
   const { db, user } = await getSession();
   if (!user || !["captain", "operator"].includes(user.role)) redirect("/");
   const { society, cycle } = await societyContext(db);
-  if (!cycle) return <p>No cycle yet.</p>;
+  if (!cycle)
+    return (
+      <div className="card">
+        <Empty icon={<ShoppingBasket size={20} aria-hidden />} title="No cycle yet" />
+      </div>
+    );
   const [pools, money, feed] = await Promise.all([poolsView(db, cycle.id), cycleMoney(db, cycle.id), activityFeed(db, cycle.id, 14)]);
   const [needStats] = await db
     .select({ households: sql<number>`count(distinct ${s.need.householdId})::int`, packs: sql<number>`coalesce(sum(${s.need.qty}),0)::int`, photo: sql<number>`count(*) filter (where ${s.need.source} = 'photo')::int` })
@@ -50,53 +67,88 @@ export default async function CaptainPage() {
     savings: p.savingsPct,
     note: p.aiNotes ?? "",
   }));
+  const priced = pools.filter((p) => ["PRICED", "SUCCEEDED", "DELIVERED"].includes(p.status)).length;
+  const target = PHASE_TARGET[cycle.phase];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-      <div className="min-w-0">
-        <CycleBar cycle={cycle} societyName={`${society.name}, captain console`} />
-        {cycle.phase === "COMMIT" && <AutoRefresh />}
-        <div className="mb-6 grid gap-3 sm:grid-cols-4">
-          <Kpi label="Households with needs" value={String(needStats.households)} sub={`${needStats.packs} packs requested${needStats.photo ? `, ${needStats.photo} from photos` : ""}`} />
-          <Kpi label="Pools" value={String(pools.length)} sub={`${pools.filter((p) => ["PRICED", "SUCCEEDED", "DELIVERED"].includes(p.status)).length} priced`} />
-          <Kpi label={money.captured ? "Charged through PayPal" : "Held in PayPal"} value={money.captured ? fmt(money.captured) : fmt(money.activeHolds)} sub={money.captured ? `of ${fmt(money.held)} held` : `${money.holders} households`} />
-          <Kpi label="Saved against retail" value={money.savings ? fmt(money.savings) : "After cutoff"} sub={money.retailEquivalent ? `${Math.round((money.savings / money.retailEquivalent) * 100)}% off ${fmt(money.retailEquivalent)}` : "Known once the week is charged"} accent />
-        </div>
+    <div>
+      <CycleBar cycle={cycle} societyName={`${society.name}, captain console`} />
+      {cycle.phase === "COMMIT" && <AutoRefresh />}
 
-        <section className="card mb-6 p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Demand board</h2>
-            <span className="text-xs text-muted">Live from every flat&apos;s basket</span>
-          </div>
-          {pools.length ? <PoolGrid rows={gridRows} /> : <CollectPreview db={db} cycleId={cycle.id} />}
-        </section>
+      <StatRow>
+        <Stat
+          icon={<Users size={20} aria-hidden />}
+          title="Households with needs"
+          value={needStats.households}
+          sentence={`${needStats.packs} packs requested${needStats.photo ? `, ${needStats.photo} from photos` : ""}`}
+          href="#demand"
+          action="Open demand board"
+        />
+        <Stat icon={<Boxes size={20} aria-hidden />} tone="info" title="Pools" value={pools.length} sentence={`${priced} priced`} href={target?.href} action={target?.action} />
+        <Stat
+          icon={<Wallet size={20} aria-hidden />}
+          tone="brand"
+          title={money.captured ? "Charged through PayPal" : "Held in PayPal"}
+          value={money.captured ? fmt(money.captured) : fmt(money.activeHolds)}
+          sentence={money.captured ? `of ${fmt(money.held)} held` : `from ${money.holders} households`}
+        />
+        <Stat
+          icon={<PiggyBank size={20} aria-hidden />}
+          tone="success"
+          title="Saved against retail"
+          value={money.savings ? fmt(money.savings) : "After cutoff"}
+          sentence={money.retailEquivalent ? `${Math.round((money.savings / money.retailEquivalent) * 100)}% off ${fmt(money.retailEquivalent)}` : "Known once the week is charged"}
+        />
+      </StatRow>
 
-        {cycle.phase === "BID" && <BidReview db={db} cycleId={cycle.id} />}
-        {cycle.phase === "COMMIT" && (
-          <section className="card p-5">
-            <h2 className="text-lg font-semibold">Money on the table</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted">
-              {money.holders} households have {fmt(money.activeHolds)} authorized in PayPal right now. The Secretary can take that to the winning suppliers and ask for a lower price at today&apos;s quantity. Prices can only go down, so every hold still covers the final charge.
-            </p>
-            <div className="mt-4">
-              <ActionButton action={fundedAsksAction.bind(null, cycle.id)}>Ask suppliers for a better price</ActionButton>
-            </div>
-          </section>
-        )}
-        {cycle.phase === "FULFIL" && <DropManifest db={db} cycleId={cycle.id} cycleIdForAdvance={cycle.id} />}
-        {["RESOLVE", "CLOSED"].includes(cycle.phase) && <IssuesQueue db={db} cycleId={cycle.id} />}
-        <div className="mt-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-6">
+          <Panel
+            id="demand"
+            title="Demand board"
+            description={pools.length ? "Live from every flat's basket." : "Collecting needs. Each product becomes a pool when collection closes."}
+            aside={pools.length ? <span className="num chip bg-surface-2 text-ink">{pools.length} pools</span> : null}
+            flush={!pools.length}
+          >
+            {pools.length ? <PoolGrid rows={gridRows} /> : <CollectPreview db={db} cycleId={cycle.id} />}
+          </Panel>
+
+          {cycle.phase === "BID" && <BidReview db={db} cycleId={cycle.id} />}
+          {cycle.phase === "COMMIT" && (
+            <Panel id="money" title="Money on the table" description="The Secretary takes the authorized total to the winning suppliers and asks for a lower price at today's quantity.">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <span className="num text-3xl font-semibold tracking-tight text-brand">{fmt(money.activeHolds)}</span>
+                  <span className="ml-2 text-muted">authorized by {money.holders} households</span>
+                  <p className="mt-1 text-sm text-muted">Prices only go down, so every hold still covers the final charge.</p>
+                </div>
+                <ActionButton action={fundedAsksAction.bind(null, cycle.id)}>
+                  <HandCoins size={18} aria-hidden /> Ask suppliers for a better price
+                </ActionButton>
+              </div>
+            </Panel>
+          )}
+          {cycle.phase === "FULFIL" && <DropManifest db={db} cycleId={cycle.id} cycleIdForAdvance={cycle.id} />}
+          {["RESOLVE", "CLOSED"].includes(cycle.phase) && <IssuesQueue db={db} cycleId={cycle.id} />}
+
           <WeekTimeline schedule={weekSchedule(cycle, society.dropPoint)} />
         </div>
+
+        <aside className="space-y-6" aria-label="Secretary and activity">
+          <SecretaryPanel db={db} cycleId={cycle.id} role="captain" />
+          <ActivityFeed items={feed} />
+          <Panel title="What you decide" description="You never see anyone's payment details.">
+            <ul className="space-y-2 text-sm">
+              {["Winning bids, or let auto-select take the top-ranked one", "The handover", "Any refund over $10"].map((t) => (
+                <li key={t} className="flex gap-2">
+                  <Check size={18} className="mt-0.5 shrink-0 text-brand" aria-hidden />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </aside>
       </div>
-      <aside className="space-y-4">
-        <SecretaryPanel db={db} cycleId={cycle.id} role="captain" />
-        <ActivityFeed items={feed} />
-        <div className="card p-4 text-sm text-muted">
-          <h3 className="mb-1 font-medium text-ink">What you decide</h3>
-          Winning bids (or let auto-select take the top-ranked one), the handover, and any refund over $10. You never see anyone&apos;s payment details.
-        </div>
-      </aside>
     </div>
   );
 }
@@ -109,20 +161,20 @@ async function CollectPreview({ db, cycleId }: { db: Awaited<ReturnType<typeof g
     .where(and(eq(s.need.cycleId, cycleId), eq(s.need.status, "active")))
     .groupBy(s.product.title, s.product.packSize)
     .orderBy(sql`sum(${s.need.qty}) desc`);
+  if (!rows.length) return <Empty icon={<ShoppingBasket size={20} aria-hidden />} title="No needs yet">Needs appear here as flats add them to their baskets.</Empty>;
   return (
-    <div>
-      <p className="mb-3 text-sm text-muted">Collecting needs. When collection closes, each product becomes a pool for local suppliers to bid on.</p>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map((r) => (
-          <div key={r.title + r.pack} className="rounded-xl bg-canvas p-3 text-sm">
-            <b>{r.title}</b> <span className="text-muted">{r.pack}</span>
-            <div className="text-xs text-muted">
-              {r.qty} packs from {r.households} households
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <ul className="divide-y divide-line">
+      {rows.map((r) => (
+        <li key={r.title + r.pack} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-6 py-3 text-sm">
+          <span>
+            <span className="font-medium">{r.title}</span> <span className="text-muted">{r.pack}</span>
+          </span>
+          <span className="num">
+            <span className="font-semibold">{r.qty}</span> <span className="text-muted">packs from {r.households} households</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -136,47 +188,91 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
     .where(and(inArray(s.bid.poolId, pools.map((p) => p.p.id).concat("-")), inArray(s.bid.status, ["submitted", "won"])));
   const trust = await trustScores(db, "seller", [...new Set(bids.map((x) => x.sel.id))]);
   return (
-    <section className="card p-5">
-      <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Bids to review</h2>
-        <span className="chip bg-info-soft text-info">Ranked by code, explained by AI</span>
-      </div>
-      <p className="mb-4 max-w-3xl text-sm text-muted">Each score weighs price at today&apos;s demand (40), the supplier&apos;s trust from verified deliveries and upheld complaints (45), and whether the minimum order is reachable (15). The cheapest bid doesn&apos;t win by default. You decide; unpicked pools go to the top score at the deadline.</p>
-      <div className="space-y-4">
+    <Panel
+      id="bids"
+      title="Bids to review"
+      description="Pick one bid per pool. Unpicked pools go to the top score at the deadline."
+      aside={<span className="chip bg-info-soft text-info">Ranked by code, explained by AI</span>}
+      flush
+    >
+      <details className="border-b border-line px-6 py-3 text-sm text-muted">
+        <summary className="cursor-pointer font-medium text-ink">How the score works</summary>
+        <p className="mt-2 max-w-3xl">Price at today&apos;s demand counts 40, the supplier&apos;s trust from verified deliveries and upheld complaints 45, and whether the minimum order is reachable 15. The cheapest bid doesn&apos;t win by default.</p>
+      </details>
+      {!pools.length && <Empty icon={<Boxes size={20} aria-hidden />} title="No pools open for bids" />}
+      <div className="divide-y divide-line">
         {pools.map(({ p, prod }) => {
           const pb = bids.filter((x) => x.b.poolId === p.id).sort((x, y) => (y.b.aiScore ?? 0) - (x.b.aiScore ?? 0));
           return (
-            <div key={p.id} className="rounded-xl border border-line p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div className="font-medium">
-                  {prod.title}
-                  {prod.brand ? ` (${prod.brand})` : ""} <span className="font-normal text-muted">{prod.packSize}. {p.demandEstimate} packs wanted, retail {fmt(prod.retailRefCents)}{prod.retailSource === "channel3" ? " (Channel3)" : ""}.</span>
+            <div key={p.id} className="px-6 py-5">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold">
+                    {prod.title}
+                    {prod.brand ? ` (${prod.brand})` : ""}
+                  </h3>
+                  <p className="num mt-0.5 text-sm text-muted">
+                    {prod.packSize}, {p.demandEstimate} packs wanted, retail {fmt(prod.retailRefCents)}
+                    {prod.retailSource === "channel3" ? " (Channel3)" : ""}
+                  </p>
                 </div>
-                {p.status === "PRICED" && <span className="chip bg-brand-soft text-brand-dark">Winner picked</span>}
+                {p.status === "PRICED" && (
+                  <span className="chip bg-success-soft text-success">
+                    <CircleCheck size={16} aria-hidden /> Winner picked
+                  </span>
+                )}
               </div>
+              {p.aiRecommendation && (
+                <p className="mt-3 flex gap-2 text-sm font-medium text-info">
+                  <Sparkles size={18} className="mt-0.5 shrink-0" aria-hidden />
+                  {p.aiRecommendation}
+                </p>
+              )}
               {p.aiNotes && <p className="mt-1 text-xs text-muted">{p.aiNotes}</p>}
-              {p.aiRecommendation && <p className="mt-1 text-sm font-medium text-brand">{p.aiRecommendation}</p>}
               {!pb.length ? (
-                <p className="mt-2 text-sm text-muted">No bids yet.</p>
+                <p className="mt-3 text-sm text-muted">No bids yet.</p>
               ) : (
-                <ul className="mt-3 grid gap-2 md:grid-cols-2">
+                <ul className="mt-4 grid gap-3 md:grid-cols-2">
                   {pb.map(({ b, sel }, i) => (
-                    <li key={b.id} className={`rounded-lg border p-3 text-sm ${b.status === "won" ? "border-brand bg-brand-soft/50" : i === 0 ? "border-info/40" : "border-line"}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <b>{sel.businessName}</b>
-                        <span className="num chip bg-canvas">Score {b.aiScore ?? ""}</span>
+                    <li key={b.id} className={`flex flex-col rounded-xl border p-4 text-sm ${b.status === "won" ? "border-success bg-success-soft" : i === 0 ? "border-info" : "border-line"}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-semibold">{sel.businessName}</span>
+                        <span className="flex shrink-0 gap-1.5">
+                          {b.status === "won" ? <span className="chip bg-surface text-success">Picked</span> : i === 0 ? <span className="chip bg-info-soft text-info">Top score</span> : null}
+                          <span className="num chip bg-surface-2 text-ink">Score {b.aiScore ?? ""}</span>
+                        </span>
                       </div>
-                      <div className="num mt-1 text-xs text-muted">
-                        Trust {trust.get(sel.id)}/100. Minimum {b.moq}, capacity {b.maxCapacity}. {b.tiers.map((t) => `${t.minQty}+ at ${fmt(t.unitCents)}`).join(", ")}. {b.deliveryWindow}.
-                      </div>
-                      {b.aiRationale && <p className="mt-1 text-xs">{b.aiRationale}</p>}
+                      <dl className="num mt-3 grid grid-cols-3 gap-2">
+                        <div>
+                          <dt className="text-xs text-muted">Trust</dt>
+                          <dd className="font-semibold">{trust.get(sel.id)}/100</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted">Minimum</dt>
+                          <dd className="font-semibold">{b.moq}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted">Capacity</dt>
+                          <dd className="font-semibold">{b.maxCapacity}</dd>
+                        </div>
+                      </dl>
+                      <p className="num mt-2 text-xs text-muted">
+                        {b.tiers.map((t) => `${t.minQty}+ at ${fmt(t.unitCents)}`).join(", ")}. {b.deliveryWindow}.
+                      </p>
                       {(b.aiFlags ?? []).map((f) => (
-                        <p key={f} className="mt-1 text-xs text-danger">
+                        <p key={f} className="mt-2 flex gap-1.5 text-xs text-danger">
+                          <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
                           {f}
                         </p>
                       ))}
+                      {b.aiRationale && (
+                        <details className="mt-2 text-xs" open={i === 0}>
+                          <summary className="cursor-pointer font-medium text-info">Why this score</summary>
+                          <p className="mt-1 text-muted">{b.aiRationale}</p>
+                        </details>
+                      )}
                       {p.status === "OPEN_FOR_BIDS" && (
-                        <div className="mt-2">
+                        <div className="mt-auto pt-3">
                           <ActionButton action={pickWinnerAction.bind(null, p.id, b.id)} className="btn btn-ghost !py-1 text-xs">
                             Pick this bid
                           </ActionButton>
@@ -190,7 +286,7 @@ async function BidReview({ db, cycleId }: { db: Awaited<ReturnType<typeof getSes
           );
         })}
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -211,39 +307,45 @@ async function DropManifest({ db, cycleId, cycleIdForAdvance }: { db: Awaited<Re
   const byUnit = new Map<string, string[]>();
   for (const l of lines) byUnit.set(l.unit, [...(byUnit.get(l.unit) ?? []), `${l.qty} × ${l.title}`]);
   return (
-    <section className="card p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Delivery check and packing list</h2>
+    <Panel
+      id="delivery"
+      title="Delivery check and packing list"
+      description="Count the delivery against this list, then hand out by flat."
+      aside={
         <ActionButton action={advancePhase.bind(null, cycleIdForAdvance)} confirm="Confirm the delivery matched this list? That opens the 24-hour window for reporting problems.">
           Confirm handover
         </ActionButton>
-      </div>
-      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-sm font-medium">Check the delivery against</h3>
+          <h3 className="mb-2 text-base font-semibold">Check the delivery against</h3>
           <ul className="divide-y divide-line text-sm">
             {[...totals].map(([k, v]) => (
-              <li key={k} className="flex justify-between py-1.5">
+              <li key={k} className="flex items-baseline justify-between gap-3 py-2">
                 <span>{k}</span>
-                <span>
-                  <b>{v.qty}</b> <span className="text-xs text-muted">from {v.seller}</span>
+                <span className="num shrink-0 text-right">
+                  <span className="font-semibold">{v.qty}</span> <span className="text-xs text-muted">from {v.seller}</span>
                 </span>
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <h3 className="mb-2 text-sm font-medium">Hand out by flat ({byUnit.size})</h3>
-          <ul className="max-h-80 space-y-1 overflow-auto text-sm">
+          <h3 className="mb-2 text-base font-semibold">
+            Hand out by flat <span className="num font-normal text-muted">({byUnit.size})</span>
+          </h3>
+          <ul className="max-h-80 divide-y divide-line overflow-auto text-sm">
             {[...byUnit].map(([unit, items]) => (
-              <li key={unit} className="rounded-lg bg-canvas px-3 py-1.5">
-                <b>{unit}</b> <span className="text-muted">{items.join(", ")}</span>
+              <li key={unit} className="flex gap-3 py-2">
+                <span className="num w-16 shrink-0 font-semibold">{unit}</span>
+                <span className="text-muted">{items.join(", ")}</span>
               </li>
             ))}
           </ul>
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -257,32 +359,47 @@ async function IssuesQueue({ db, cycleId }: { db: Awaited<ReturnType<typeof getS
     .innerJoin(s.pool, eq(s.basketLine.poolId, s.pool.id))
     .innerJoin(s.product, eq(s.pool.productId, s.product.id))
     .where(eq(s.basket.cycleId, cycleId));
+  const waiting = issues.filter(({ i }) => i.decision === "pending").length;
   return (
-    <section className="card p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Issues</h2>
-        <span className="text-xs text-muted">The Secretary refunds small claims itself; larger ones come to you</span>
-      </div>
+    <Panel
+      id="issues"
+      title="Issues"
+      description="The Secretary refunds small claims itself; larger ones come to you."
+      aside={waiting ? <span className="num chip bg-accent-soft text-accent-ink">{waiting} waiting for you</span> : null}
+      flush
+    >
       {!issues.length ? (
-        <p className="text-sm text-muted">No problems reported. Residents have 24 hours after handover.</p>
+        <Empty icon={<CircleCheck size={20} aria-hidden />} title="No problems reported">
+          Residents have 24 hours after handover.
+        </Empty>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-line">
           {issues.map(({ i, unit, title }) => (
-            <li key={i.id} className="flex flex-wrap gap-4 rounded-xl border border-line p-3 text-sm">
-              {i.photoDataUrl && <img src={i.photoDataUrl} alt="Issue" className="h-24 w-24 rounded-lg object-cover" />}
+            <li key={i.id} className="flex flex-wrap gap-4 px-6 py-4 text-sm">
+              {i.photoDataUrl && <img src={i.photoDataUrl} alt={`Photo of the ${title} problem from ${unit}`} className="h-20 w-20 rounded-lg border border-line object-cover" />}
               <div className="min-w-60 flex-1">
-                <div className="font-semibold">
-                  {unit}: {title}, {i.type.replace("_", " ")}, {i.qtyAffected} pack{i.qtyAffected === 1 ? "" : "s"}
-                </div>
-                <p className="text-muted">“{i.description}”</p>
+                <h3 className="text-base font-semibold">
+                  {unit}: {title}
+                </h3>
+                <p className="num text-muted">
+                  {i.type.replace("_", " ")}, {i.qtyAffected} pack{i.qtyAffected === 1 ? "" : "s"}
+                </p>
+                <p className="mt-1">“{i.description}”</p>
                 {i.aiAssessment && (
-                  <p className="mt-1 text-xs text-info">
-                    {i.aiAssessment.rationale} Proposed refund {fmt(i.aiAssessment.proposedRefundCents)} ({i.aiAssessment.confidence} confidence{i.aiAssessment.source === "ai" ? "" : ", rules"}).
-                  </p>
+                  <div className="mt-2 rounded-lg bg-info-soft px-3 py-2 text-xs">
+                    <p className="num flex gap-1.5 font-medium text-info">
+                      <Sparkles size={16} className="mt-0.5 shrink-0" aria-hidden />
+                      Proposed refund {fmt(i.aiAssessment.proposedRefundCents)}, {i.aiAssessment.confidence} confidence{i.aiAssessment.source === "ai" ? "" : ", rules"}
+                    </p>
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-muted">Secretary&apos;s reasoning</summary>
+                      <p className="mt-1 text-ink">{i.aiAssessment.rationale}</p>
+                    </details>
+                  </div>
                 )}
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span className={`num chip ${i.decision === "pending" ? "bg-accent-soft text-accent-ink" : i.decision === "rejected" ? "bg-danger-soft text-danger" : "bg-brand-soft text-brand-dark"}`}>
+                <span className={`num chip ${ISSUE_TONE[i.decision] ?? "bg-surface-2 text-ink"}`}>
                   {ISSUE_DECISION[i.decision]}
                   {i.refundCents ? ` ${fmt(i.refundCents)}` : ""}
                 </span>
@@ -301,6 +418,6 @@ async function IssuesQueue({ db, cycleId }: { db: Awaited<ReturnType<typeof getS
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

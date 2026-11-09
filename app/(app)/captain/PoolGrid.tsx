@@ -4,18 +4,19 @@ import { Grid, money } from "@/app/_components/Grid";
 
 type Row = { id: string; product: string; pack: string; status: string; demand: number; bids: number; seller: string; trust: number | null; moq: number | null; committed: number; unit: number | null; nextNeeded: number | null; nextUnit: number | null; retail: number; savings: number | null; note: string };
 
-export const POOL_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  OPEN_FOR_BIDS: { label: "Open for bids", bg: "var(--pc-brand-soft)", fg: "var(--pc-brand)" },
-  PRICED: { label: "Taking orders", bg: "var(--pc-accent-soft)", fg: "var(--pc-accent-ink)" },
-  SUCCEEDED: { label: "Ordered", bg: "var(--pc-success-soft)", fg: "var(--pc-success)" },
-  DELIVERED: { label: "Delivered", bg: "var(--pc-success-soft)", fg: "var(--pc-success)" },
-  FAILED: { label: "Missed minimum", bg: "var(--pc-danger-soft)", fg: "var(--pc-danger)" },
-  NO_BID: { label: "No bids", bg: "var(--pc-danger-soft)", fg: "var(--pc-danger)" },
+// Waiting on suppliers is accent, PayPal holds being taken is brand, done is success, problems are danger.
+export const POOL_STATUS: Record<string, { label: string; tone: string }> = {
+  OPEN_FOR_BIDS: { label: "Open for bids", tone: "bg-accent-soft text-accent-ink" },
+  PRICED: { label: "Taking orders", tone: "bg-brand-soft text-brand-dark" },
+  SUCCEEDED: { label: "Ordered", tone: "bg-success-soft text-success" },
+  DELIVERED: { label: "Delivered", tone: "bg-success-soft text-success" },
+  FAILED: { label: "Missed minimum", tone: "bg-danger-soft text-danger" },
+  NO_BID: { label: "No bids", tone: "bg-danger-soft text-danger" },
 };
 
 function StatusCell({ value }: { value: string }) {
-  const st = POOL_STATUS[value] ?? { label: value, bg: "var(--pc-track)", fg: "var(--pc-muted)" };
-  return <span style={{ padding: "2px 9px", borderRadius: 99, fontSize: 12, fontWeight: 500, background: st.bg, color: st.fg }}>{st.label}</span>;
+  const st = POOL_STATUS[value] ?? { label: value, tone: "bg-track text-muted" };
+  return <span className={`chip ${st.tone}`}>{st.label}</span>;
 }
 
 /** How close the building is to the next cheaper price, as a small bar inside the cell. */
