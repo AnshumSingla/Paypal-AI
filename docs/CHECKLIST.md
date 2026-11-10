@@ -12,6 +12,8 @@ Deadline: **Fri 13 Nov 2026, 01:30 IST** (Thu 12 Nov, 12:00 PT). Aim to submit b
 
 ## Must do (the submission is incomplete without these)
 
+- [ ] **Give the sandbox business account a large balance.** Each guided tour pays suppliers about $800 through Payouts, and the "Collective US" account ran out (`INSUFFICIENT_FUNDS`) after a few test runs. Without a big balance, payouts fail for judges after a handful of tours. In developer.paypal.com, go to Testing Tools > Sandbox Accounts > Create account, choose Business and United States, and set a PayPal balance of 9,999,999 USD. Then create an app on that account (Apps & Credentials > Create App) and put its Client ID and Secret into `.env` and Render.
+
 - [ ] **Deploy on Render.** Use the Deploy to Render button in the README, or New > Blueprint with this repo. When Render prompts for secrets, enter the same values as your local `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PERSONAL_EMAIL`, `GEMINI_API_KEY`, `GROQ_API_KEY`. Leave the others blank for now.
 - [ ] **Check the deploy.** `https://<service>.onrender.com/api/health` should return `{"ok":true,"paypal":"sandbox"}`. Then complete the guided tour once from a private window. Every visitor shares one demo week, so if two people tour at once they can move each other's steps. The testing notes tell judges to press Start over if that happens.
 - [ ] **Add the PayPal webhook.** In developer.paypal.com, open Apps & Credentials, then the **Collective US** app, then Add Webhook. Use the URL `https://<service>.onrender.com/api/webhooks/paypal` and select all payment events. Copy the Webhook ID into Render as `PAYPAL_WEBHOOK_ID` and redeploy.
