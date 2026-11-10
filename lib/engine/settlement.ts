@@ -135,7 +135,7 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
     }
   }
   const saved = heldTotal - capturedTotal;
-  const msg = `Cutoff settled: ${succeeded} pools succeeded, ${failed} failed. Captured ${fmt(capturedTotal)} of ${fmt(heldTotal)} held (${fmt(saved)} released back to residents)${voided ? `, ${voided} holds fully voided` : ""}${failedHolds ? `, ${failedHolds} invalid holds skipped` : ""}.`;
+  const msg = `Cutoff settled: ${succeeded} pools reached their minimum${failed ? `; ${failed} didn't, so nobody pays for ${failed === 1 ? "it" : "them"}` : ""}. Captured ${fmt(capturedTotal)} of ${fmt(heldTotal)} held (${fmt(saved)} released back to residents)${voided ? `, ${voided} holds fully voided` : ""}${failedHolds ? `, ${failedHolds} invalid holds skipped` : ""}.`;
   await log(db, cycleId, actor, "phase", msg);
   return msg;
 }

@@ -195,7 +195,11 @@ export default async function SellerPage({ searchParams }: { searchParams: Promi
                         </ActionButton>
                       </div>
                     )}
-                    {po.paypalBatchId && <p className="mono mt-1 truncate text-sm text-subtle">Batch {po.paypalBatchId}</p>}
+                    {po.paypalBatchId?.startsWith("MOCK-") ? (
+                      <p className="mt-1 text-sm text-subtle">Past week from the demo&apos;s history, not sent to PayPal</p>
+                    ) : (
+                      po.paypalBatchId && <p className="mono mt-1 truncate text-sm text-subtle">PayPal batch {po.paypalBatchId}</p>
+                    )}
                   </li>
                 ))}
               </ul>

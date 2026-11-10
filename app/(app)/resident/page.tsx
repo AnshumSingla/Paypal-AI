@@ -126,7 +126,7 @@ export default async function ResidentPage() {
                             {p.winning?.sellerName}, now <span className="num font-semibold text-ink">{fmt(p.currentUnit ?? p.ceilingUnit)}</span> a pack.{" "}
                             {p.next ? (
                               <span className="text-brand">
-                                {p.next.needed} more and it drops to {fmt(p.next.unitCents)}.
+                                {p.next.unitCents < (p.currentUnit ?? p.ceilingUnit ?? Infinity) ? `${p.next.needed} more and it drops to ${fmt(p.next.unitCents)}.` : `${p.next.needed} more and the order reaches the supplier's minimum.`}
                               </span>
                             ) : (
                               <span className="text-success">Best price unlocked.</span>

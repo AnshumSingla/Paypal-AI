@@ -91,7 +91,14 @@ if (!(await card())) throw new Error("the tour card never appeared after Start o
 const CHOICES = { "Neighbours join, prices drop": ["12 flats confirm, one card is declined", "12 flats confirm"], "Something was missing": ["A whole item over $10 was missing"], "The captain decides": ["Approve the refund"] };
 const used = {};
 for (let guard = 0; guard < 20; guard++) {
-  const c = await card();
+  // The card's message updates before the page refresh brings the next step, so wait until it settles.
+  let c = await card();
+  for (let i = 0; i < 20; i++) {
+    await sleep(600);
+    const again = await card();
+    if (again?.title === c?.title && again?.msg === c?.msg) break;
+    c = again;
+  }
   if (!c) break;
   await shot(`step-${c.title.toLowerCase().replace(/[^a-z]+/g, "-")}`, `${c.title}${c.msg ? `|${c.msg}` : ""}`);
   if (c.title === "The week in numbers") break;
