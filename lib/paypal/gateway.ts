@@ -118,6 +118,13 @@ async function sdkCall<T>(fn: () => Promise<{ result: T }>): Promise<T> {
   }
 }
 
+// PayPal reports a declined card as a 201 with authorization status DENIED, not as an error.
+// Only CREATED or PENDING is money held; anything else is a decline, like the stand-in's 422.
+function held<T extends { status?: string }>(auth: T): T {
+  if (auth.status !== "CREATED" && auth.status !== "PENDING") throw new PayPalError(422, "INSTRUMENT_DECLINED", `authorization ${auth.status ?? "missing"}`);
+  return auth;
+}
+
 const sandbox: Gateway = {
   mode: "sandbox",
   async createWalletOrder({ cents, referenceId, description }) {
@@ -136,7 +143,7 @@ const sandbox: Gateway = {
   },
   async authorizeOrder(orderId) {
     const o = await sdkCall(() => pp().orders.authorizeOrder({ id: orderId, paypalRequestId: `authorize-${orderId}`, prefer: representation }));
-    const auth = o.purchaseUnits![0].payments!.authorizations![0];
+    const auth = held(o.purchaseUnits![0].payments!.authorizations![0]);
     return { authorizationId: auth.id!, status: auth.status as AuthStatus, payerEmail: o.payer?.emailAddress };
   },
   async cardHold({ cents, referenceId, description, name = "Collective Neighbour" }) {
@@ -164,6 +171,7 @@ const sandbox: Gateway = {
       const o = await sdkCall(() => pp().orders.authorizeOrder({ id: order.id!, paypalRequestId: `authorize-${order.id}`, prefer: representation }));
       auth = o.purchaseUnits![0].payments!.authorizations![0];
     }
+    held(auth);
     return { orderId: order.id!, authorizationId: auth.id!, status: auth.status as AuthStatus };
   },
   async getAuthorization(id) {
