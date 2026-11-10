@@ -2,9 +2,9 @@
 
 **Your housing society buys groceries in bulk, together.** Each resident approves one PayPal hold for the most they'd pay. An AI Society Secretary gets trusted local suppliers to compete, then goes back to them with the money already approved to push prices lower. At cutoff, PayPal charges only the price the whole building unlocked.
 
-[![Collective launch video](brag-output/brag.jpg)](brag-output/brag.mp4)
+[![Collective launch video](brag-output-2026-11-11-023203/brag.jpg)](brag-output-2026-11-11-023203/brag.mp4)
 
-*Approved $3.91 a pack. Paid $3.43. The rest of the hold went back.* 24-second launch video above; the [2-minute demo](brag-output/demo.mp4) walks the whole guided tour in the real app.
+*Eggs approved at $3.92 a pack, charged at $3.52, the rest of the hold released.* Both videos are recorded from one real PayPal sandbox run, and every PayPal ID on screen is one the sandbox returned. Above: a 29-second launch film. The [2-minute demo](brag-output/demo.mp4) walks the whole guided tour in the real app.
 
 | | |
 |---|---|
@@ -141,9 +141,11 @@ With sandbox keys, residents approve in the real PayPal popup with a sandbox per
 npm test
 ```
 
-54 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; Channel3 retail picks; the guided tour walking all twelve steps, and its alternative path (withdraw, then a claim the captain rejects), to a balanced ledger; and the Gemini-to-Groq fallback and tool-input validation with the network mocked.
+57 tests on an in-memory Postgres with the PayPal stand-in: tier pricing; minimum-order failure; capacity cut-off; a full week with hold, partial capture under the hold, refund and payouts; a second week after reset; a failed void not blocking cutoff; re-running settlement charging nobody twice; restart recovery; trust smoothing and recency; agent refund limits; supplier price floors; Channel3 retail picks, and rejecting results that aren't the same product; PayPal calls batched five at a time with every failure kept; the guided tour walking all twelve steps, and its alternative path (withdraw, then a claim the captain rejects), to a balanced ledger; and the Gemini-to-Groq fallback and tool-input validation with the network mocked.
 
-`spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts and Channel3. Run `cd spikes && npm install && npm run all`.
+`spikes/` holds standalone scripts that exercise the real sandbox: hold, partial final capture, refund, void, decline, wallet approval, payouts and Channel3. Run `cd spikes && npm install && npm run all`; the latest results, with the PayPal IDs they created, are in [spikes/RESULTS.md](spikes/RESULTS.md).
+
+`npm run sandbox:week` walks the whole guided week against the real sandbox (holds, a declined card, partial captures, a refund the captain approves, supplier payouts) and prints every PayPal ID it created, so each one can be found in the sandbox dashboard.
 
 ## Deploy on Render
 

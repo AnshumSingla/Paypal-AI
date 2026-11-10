@@ -62,7 +62,7 @@ Sandbox only. The Pune demo runs in US dollars because PayPal doesn't process do
 
 ## Video script (2 minutes 45 seconds)
 
-Record the hosted demo with real sandbox keys. Voice-over recorded separately; captions on. No music.
+`brag-output/demo.mp4` is already recorded from a real sandbox run: the whole guided tour, typed captions, keystroke sounds, no music. It works as it is, or with this voice-over read on top. (Timings below are for a narrated cut; the recorded video runs about 2 minutes.)
 
 | Time | On screen | Voice-over |
 |---|---|---|

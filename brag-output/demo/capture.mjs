@@ -10,7 +10,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const PORT = 9335;
 const FPS = 30;
-const stills = process.argv.slice(2).map(Number);
+// node capture.mjs range 96 112  -> re-render only the frames between those seconds into frames/
+const RANGE = process.argv[2] === "range" ? process.argv.slice(3, 5).map(Number) : null;
+const stills = RANGE ? [] : process.argv.slice(2).map(Number);
 
 const chrome = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${PORT}`, `--user-data-dir=${join(here, "chrome-profile")}`, "--hide-scrollbars", "--window-size=1920,1080", "--force-device-scale-factor=1", "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -45,6 +47,12 @@ if (stills.length) {
   mkdirSync(join(here, "stills"), { recursive: true });
   for (const t of stills) await shot(t, join(here, "stills", `t${t.toFixed(2)}.jpg`));
   console.log("stills done");
+} else if (RANGE) {
+  const dir = join(here, "frames");
+  const [a, b] = RANGE;
+  let n = 0;
+  for (let f = Math.floor(a * FPS); f < Math.min(Math.round(total * FPS), Math.ceil(b * FPS)); f++, n++) await shot(f / FPS, join(dir, `f${String(f).padStart(5, "0")}.jpg`));
+  console.log(`frames redone: ${n} between ${a}s and ${b}s`);
 } else {
   const dir = join(here, "frames");
   rmSync(dir, { recursive: true, force: true });

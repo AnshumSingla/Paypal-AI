@@ -1,7 +1,7 @@
 // Drive the real app through the guided tour in headless Chrome and screenshot every step.
 // Usage: node shoot.mjs [baseUrl]   (default http://localhost:3200) -> shots/*.jpg + shots.json
 import { spawn } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,7 +12,9 @@ const PORT = 9334;
 const W = 1600;
 const H = 900;
 const out = join(here, "shots");
-rmSync(out, { recursive: true, force: true });
+// "views" as the second argument retakes only the closing views (receipt, ops, analytics) after the tour.
+const VIEWS_ONLY = process.argv[3] === "views";
+if (!VIEWS_ONLY) rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 const profile = join(here, "chrome-profile");
 rmSync(profile, { recursive: true, force: true });
@@ -50,8 +52,8 @@ await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceSc
 await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }); // the spotlight lands at once
 await send("Page.enable");
 
-const shots = [];
-let k = 0;
+const shots = VIEWS_ONLY ? JSON.parse(readFileSync(join(here, "shots.json"), "utf8")).filter((x) => /step-/.test(x.file) || /landing/.test(x.file)) : [];
+let k = shots.length;
 async function shot(name, caption) {
   await sleep(700);
   const { data } = await send("Page.captureScreenshot", { format: "jpeg", quality: 90 });
@@ -68,7 +70,7 @@ async function go(url) {
 const clickText = (label) =>
   js(`(() => { const b = [...document.querySelectorAll("button")].find((x) => x.textContent.trim().startsWith(${JSON.stringify(label)}) && !x.disabled); if (!b) return false; b.click(); return true; })()`);
 const state = () => js(`(() => { const d = document.querySelector('[role=dialog][aria-label^="Guided tour"]'); const m = d?.querySelector("p.rounded-lg"); return JSON.stringify({ step: d?.getAttribute("aria-label") ?? "", msg: m?.textContent ?? "", path: location.pathname, busy: !!d?.querySelector("button[disabled]") }); })()`).then(JSON.parse);
-const card = () => js(`(() => { const d = document.querySelector('[role=dialog][aria-label^="Guided tour"]'); return d ? { title: d.querySelector("h2")?.textContent ?? "", msg: d.querySelector("p.rounded-lg")?.textContent ?? "", step: d.getAttribute("aria-label") } : null; })()`);
+const card = () => js(`(() => { const d = document.querySelector('[role=dialog][aria-label^="Guided tour"]'); return d ? { title: d.querySelector("h2")?.textContent ?? "", msg: d.querySelector("p.rounded-lg")?.textContent ?? "", step: d.getAttribute("aria-label"), busy: d.textContent.includes("Running it for real") } : null; })()`);
 async function waitChange(before) {
   for (let i = 0; i < 240; i++) {
     await sleep(500);
@@ -82,6 +84,7 @@ async function waitChange(before) {
 }
 
 // Landing page, then start the tour from a clean week.
+if (!VIEWS_ONLY) {
 await go("/");
 await shot("landing", "Buy together. Pay less.");
 if (!(await clickText("Start over")) && !(await clickText("Take the guided tour"))) throw new Error("no tour button on the landing page");
@@ -96,7 +99,7 @@ for (let guard = 0; guard < 20; guard++) {
   for (let i = 0; i < 20; i++) {
     await sleep(600);
     const again = await card();
-    if (again?.title === c?.title && again?.msg === c?.msg) break;
+    if (again?.title === c?.title && again?.msg === c?.msg && !again?.busy) break;
     c = again;
   }
   if (!c) break;
@@ -115,8 +118,10 @@ for (let guard = 0; guard < 20; guard++) {
   }
   await waitChange(before);
 }
+}
 
 // A few clean views without the tour card.
+await go("/"); // sessionStorage belongs to the app's origin, so be on it first
 await js(`sessionStorage.setItem("tour:hidden", "1")`);
 for (const [persona, url, name, caption] of [
   ["Resident", "/resident", "receipt", "Ananya's receipt: approved, charged, refunded, with PayPal IDs"],

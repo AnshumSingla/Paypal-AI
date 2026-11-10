@@ -7,5 +7,5 @@ export default defineConfig([
   ...nextTs,
   // Images here are photos residents attach (data URLs); next/image adds nothing for them.
   { rules: { "@next/next/no-img-element": "off" } },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "spikes/**", "brag-output/**", "drizzle/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "spikes/**", "brag-output/**", "brag-output-*/**", "drizzle/**"]),
 ]);

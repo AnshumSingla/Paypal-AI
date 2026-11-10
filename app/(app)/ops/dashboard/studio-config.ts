@@ -4,7 +4,9 @@ import { studioTheme } from "ag-studio";
 import type { DashboardData } from "@/lib/dashboard-data";
 
 type FieldSpec = [id: string, name: string, format: AgFormat, hide?: boolean];
-const fields = (specs: FieldSpec[]): AgFieldDefinition[] => specs.map(([id, name, format, hide]) => ({ id, name, format, ...(hide && { hide }) }));
+// Money is USD; without this AG Studio's currency format prints plain numbers ("1,030.63").
+const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const fields = (specs: FieldSpec[]): AgFieldDefinition[] => specs.map(([id, name, format, hide]) => ({ id, name, format, ...(format === "currencyFormat" && { formatOptions: { format: USD } }), ...(hide && { hide }) }));
 const sumOf = (id: string) => ({ id, aggregation: "sum" as const });
 const ratio = (id: string, name: string, description: string, num: string, den: string): AgExpressionFieldDefinition => ({ id, name, description, format: "percentageFormat", isMeasure: true, expression: { operator: "divide", inputs: [sumOf(num), sumOf(den)] } });
 
@@ -116,10 +118,10 @@ const kpi = (text: string, value: { id: string; aggregation?: "sum" }) => ({ typ
 const overview: AgPageState = {
   id: "overview",
   widgets: {
-    "kpi-saved": kpi("Residents saved vs retail", sumOf("lines.savings")),
-    "kpi-paid": kpi("Captured from residents", sumOf("payments.captured")),
-    "kpi-released": kpi("Hold released back", sumOf("payments.released")),
-    "kpi-success": kpi("Pool success rate", { id: "poolSuccess" }),
+    "kpi-saved": kpi("Saved vs retail", sumOf("lines.savings")),
+    "kpi-paid": kpi("Charged", sumOf("payments.captured")),
+    "kpi-released": kpi("Released", sumOf("payments.released")),
+    "kpi-success": kpi("Pools filled", { id: "poolSuccess" }),
     "savings-by-product": {
       type: "bar-chart-grouped",
       dataMapping: { categoryKey: [{ id: "lines.product" }], valueKey: [sumOf("lines.retail"), sumOf("lines.paid")] },
@@ -162,9 +164,9 @@ const overview: AgPageState = {
 const sellers: AgPageState = {
   id: "sellers",
   widgets: {
-    "kpi-gross": kpi("Supplier gross sales", sumOf("payouts.gross")),
-    "kpi-commission": kpi("Platform commission", sumOf("payouts.commission")),
-    "kpi-net": kpi("Paid out via PayPal Payouts", sumOf("payouts.net")),
+    "kpi-gross": kpi("Gross sales", sumOf("payouts.gross")),
+    "kpi-commission": kpi("Commission", sumOf("payouts.commission")),
+    "kpi-net": kpi("Paid out", sumOf("payouts.net")),
     "kpi-take": kpi("Take rate", { id: "takeRate" }),
     "by-seller": {
       type: "bar-chart-grouped",

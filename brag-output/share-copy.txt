@@ -1,7 +1,0 @@
-Approve the max. Pay what the building unlocked.
-
-Collective: a housing society buys groceries in bulk. Each resident approves one PayPal hold for the most they'd pay. An AI Society Secretary goes back to suppliers with money already authorized and gets the price down. PayPal charges only the price the building unlocked: approved $3.91, paid $3.43.
-
-Built for the PayPal AI Hackathon with PayPal Orders (authorize, partial capture, void), Refunds, Payouts and Claude.
-
-#PayPalAIHackathon #AgenticCommerce

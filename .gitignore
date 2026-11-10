@@ -27,6 +27,11 @@ brag-output/demo/stills/
 brag-output/demo/shots/
 brag-output/demo/chrome-profile/
 brag-output/demo/music.wav
+brag-output/demo/sfx.wav
+brag-output-*/work/frames/
+brag-output-*/work/stills/
+brag-output-*/work/chrome-profile/
+brag-output-*/work/sfx.wav
 brag-output/demo/video.html
 brag-output/demo/mobile/
 brag-output/demo/mobile.mjs
