@@ -8,7 +8,7 @@ Everything for the Devpost form and the video, in one place. Fill the three blan
 
 **Tagline (under 200 characters):** Your housing society buys groceries in bulk. Approve once with PayPal; an AI Society Secretary gets trusted suppliers to compete; pay only the price the building unlocked.
 
-**Links:** GitHub repo (public, MIT licence visible) **[ ]**. Hosted demo on Render **[ ]**. YouTube video **[ ]**.
+**Links:** GitHub repo https://github.com/AnshumSingla/Paypal-AI (MIT licence detected; the repo must be switched to **public** before submitting). Hosted demo on Render **[ ]**. YouTube video **[ ]**.
 
 **Built with:** paypal, paypal-server-sdk, apimatic, bryntum, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, gemini, groq, ag-grid, ag-studio, channel3, render, next.js, typescript, postgresql, drizzle
 
