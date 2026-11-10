@@ -12,7 +12,8 @@ await spike("03", "Card decline is detectable (CCREJECT-REFUSED)", async () => {
     }
     throw new Error(`Expected a decline but authorization status was ${hold.status}`);
   } catch (e) {
-    if (e.status) return `declined with HTTP ${e.status} ${e.issue}`;
+    // Only a card refusal counts; an account problem (e.g. PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING) is a failure.
+    if (e.status === 422 && /DECLINED|REFUSED|INSTRUMENT/.test(String(e.issue))) return `declined with HTTP ${e.status} ${e.issue}`;
     throw e;
   }
 });
