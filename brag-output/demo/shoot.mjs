@@ -84,8 +84,9 @@ async function waitChange(before) {
 // Landing page, then start the tour from a clean week.
 await go("/");
 await shot("landing", "Buy together. Pay less.");
-await clickText("Start over");
-for (let i = 0; i < 120 && !(await card()); i++) await sleep(500);
+if (!(await clickText("Start over")) && !(await clickText("Take the guided tour"))) throw new Error("no tour button on the landing page");
+for (let i = 0; i < 480 && !(await card()); i++) await sleep(500);
+if (!(await card())) throw new Error("the tour card never appeared after Start over");
 
 const CHOICES = { "Neighbours join, prices drop": ["12 flats confirm, one card is declined", "12 flats confirm"], "Something was missing": ["A whole item over $10 was missing"], "The captain decides": ["Approve the refund"] };
 const used = {};

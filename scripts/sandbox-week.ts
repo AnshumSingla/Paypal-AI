@@ -34,6 +34,9 @@ async function main() {
   const refunds = await db.select().from(s.refund);
   const payouts = await db.select().from(s.payout).where(eq(s.payout.cycleId, CYCLE));
   const usd = (n: number) => `$${(n / 100).toFixed(2)}`;
+  const { like } = await import("drizzle-orm");
+  for (const a of await db.select().from(s.activity).where(like(s.activity.message, "%simulated neighbours%"))) console.log(a.message);
+  for (const a of await db.select().from(s.activity).where(like(s.activity.message, "Cutoff settled%"))) console.log(a.message);
   console.log(`\nphase ${c.phase}; ledger balanced: ${(await ledgerTotals(db)).balanced}`);
   console.log(`payments: ${payments.length} (${payments.filter((p) => p.mode === "sandbox").length} on sandbox)`);
   for (const p of payments.slice(0, 6)) console.log(`  order ${p.paypalOrderId}  auth ${p.paypalAuthorizationId ?? "-"}  capture ${p.paypalCaptureId ?? "-"}`);
