@@ -7,6 +7,9 @@ import { gateway } from "../paypal/gateway";
 import { settlePool } from "./pricing";
 import { log, post } from "./ledger";
 import { recordTrust } from "./trust";
+import { settleAll } from "../util/pool";
+
+const PAYPAL_CONCURRENCY = 5;
 
 export async function settleCycle(db: DB, cycleId: string, actor: string): Promise<string> {
   const gw = gateway();
@@ -20,20 +23,20 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
   const held = baskets.filter((b) => b.status === "AUTHORIZED");
 
   // 1) Dry run: confirm every hold is still valid before anyone is charged (Architecture §8 edge cases).
+  // PayPal is asked a few baskets at a time; the database is written one basket at a time.
   const payments = new Map<string, typeof s.payment.$inferSelect>();
   let failedHolds = 0;
-  for (const b of held) {
-    const [p] = await db.select().from(s.payment).where(and(eq(s.payment.basketId, b.id), eq(s.payment.status, "AUTHORIZED")));
-    let ok = Boolean(p?.paypalAuthorizationId);
-    if (ok) {
-      try {
-        const a = await gw.getAuthorization(p.paypalAuthorizationId!);
-        ok = a.status === "CREATED" || a.status === "PENDING";
-      } catch {
-        ok = false;
-      }
-    }
-    if (ok) payments.set(b.id, p);
+  const found: (typeof s.payment.$inferSelect | undefined)[] = [];
+  for (const b of held) found.push((await db.select().from(s.payment).where(and(eq(s.payment.basketId, b.id), eq(s.payment.status, "AUTHORIZED"))))[0]);
+  const checks = await settleAll(found, PAYPAL_CONCURRENCY, async (p) => {
+    if (!p?.paypalAuthorizationId) return false;
+    const a = await gw.getAuthorization(p.paypalAuthorizationId);
+    return a.status === "CREATED" || a.status === "PENDING";
+  });
+  for (const [i, b] of held.entries()) {
+    const p = found[i];
+    const ok = checks[i].status === "fulfilled" && checks[i].value === true;
+    if (ok && p) payments.set(b.id, p);
     else {
       failedHolds++;
       await db.update(s.basket).set({ status: "PAYMENT_FAILED" }).where(eq(s.basket.id, b.id));
@@ -69,6 +72,7 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
   let capturedTotal = 0;
   let heldTotal = 0;
   let voided = 0;
+  const plans = [];
   for (const b of held) {
     const pay = payments.get(b.id);
     if (!pay) continue;
@@ -81,21 +85,30 @@ export async function settleCycle(db: DB, cycleId: string, actor: string): Promi
       .innerJoin(s.bid, eq(s.pool.winningBidId, s.bid.id))
       .where(and(eq(s.basketLine.basketId, b.id), eq(s.basketLine.status, "won")));
     const total = won.reduce((sum, { l }) => sum + l.qty * (l.finalUnitCents ?? 0), 0);
+    plans.push({ b, pay, won, total });
+  }
+  const calls = await settleAll(plans, PAYPAL_CONCURRENCY, async ({ b, pay, total }) => {
+    if (total === 0) return void (await gw.voidAuthorization(pay.paypalAuthorizationId!));
+    if (total > pay.authorizedCents) throw new Error(`Invariant violated: capture ${total} > hold ${pay.authorizedCents} for basket ${b.id}`); // Policies §1.3
+    return gw.capture({ authorizationId: pay.paypalAuthorizationId!, cents: total, finalCapture: true, invoiceId: `${b.id}-${cycleId}` });
+  });
+  for (const [i, { b, pay, won, total }] of plans.entries()) {
+    const call = calls[i];
     if (total === 0) {
-      try {
-        await gw.voidAuthorization(pay.paypalAuthorizationId!);
+      if (call.status === "fulfilled") {
         await db.update(s.payment).set({ status: "VOIDED" }).where(eq(s.payment.id, pay.id));
         await db.update(s.basket).set({ status: "RELEASED" }).where(eq(s.basket.id, b.id));
         voided++;
-      } catch (e) {
+      } else {
+        const e = call.reason;
         console.error(`[settlement] void failed for ${b.id}`, e);
         await log(db, cycleId, "settlement", "money", `Couldn't release one unused hold right away; nothing was charged and PayPal expires it automatically. (${e instanceof Error ? e.message : e})`);
       }
       continue;
     }
     try {
-      if (total > pay.authorizedCents) throw new Error(`Invariant violated: capture ${total} > hold ${pay.authorizedCents} for basket ${b.id}`); // Policies §1.3
-      const cap = await gw.capture({ authorizationId: pay.paypalAuthorizationId!, cents: total, finalCapture: true, invoiceId: `${b.id}-${cycleId}` });
+      if (call.status === "rejected") throw call.reason;
+      const cap = call.value!;
       capturedTotal += total;
       const perSeller = new Map<string, number>();
       for (const { l, sellerId } of won) perSeller.set(sellerId, (perSeller.get(sellerId) ?? 0) + l.qty * l.finalUnitCents!);

@@ -4,6 +4,7 @@ import { and, eq, notInArray, sql } from "drizzle-orm";
 import type { DB } from "../db";
 import * as s from "../db/schema";
 import { newId } from "../util/ids";
+import { settleAll } from "../util/pool";
 import { CATALOG, DEMAND_PROFILE, rng, seed, SOCIETY_ID, weekDeadlines } from "../db/seed";
 import { cardCheckout, getOrCreateBasket } from "./basket";
 import { ceilingUnit, PolicyError } from "./pricing";
@@ -28,6 +29,7 @@ export async function simulateNeighbours(db: DB, cycleId: string, count: number,
   let joined = 0;
   let failed = 0;
   const targets = [...drafts.map((d) => d.householdId), ...fresh.map((h) => h.id)].slice(0, count);
+  const ready: { basketId: string; declined: boolean }[] = [];
   for (const householdId of targets) {
     const bk = await getOrCreateBasket(db, cycleId, householdId);
     const existing = await db.select().from(s.basketLine).where(eq(s.basketLine.basketId, bk.id));
@@ -45,13 +47,15 @@ export async function simulateNeighbours(db: DB, cycleId: string, count: number,
       );
     }
     await db.update(s.basket).set({ simulated: true }).where(eq(s.basket.id, bk.id));
-    try {
-      const declined = opts.declineLast && householdId === targets.at(-1);
-      await cardCheckout(db, bk.id, "simulated neighbour", declined ? "CCREJECT-REFUSED" : undefined);
-      joined++;
-    } catch (e) {
+    ready.push({ basketId: bk.id, declined: Boolean(opts.declineLast && householdId === targets.at(-1)) });
+  }
+  // Each checkout touches only its own basket, so a few PayPal holds can be in flight at once.
+  const holds = await settleAll(ready, 5, ({ basketId, declined }) => cardCheckout(db, basketId, "simulated neighbour", declined ? "CCREJECT-REFUSED" : undefined));
+  for (const h of holds) {
+    if (h.status === "fulfilled") joined++;
+    else {
       failed++;
-      console.error("[demo] simulated hold failed", e);
+      console.error("[demo] simulated hold failed", h.reason);
     }
   }
   await log(db, cycleId, actor, "resident", `${joined} simulated neighbours confirmed baskets with PayPal holds${failed ? ` (${failed} failed)` : ""}.`);
