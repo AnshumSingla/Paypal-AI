@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:reset": "tsx scripts/reset-db.ts",
+    "sandbox:week": "tsx scripts/sandbox-week.ts",
     "test": "vitest run"
   },
   "dependencies": {
