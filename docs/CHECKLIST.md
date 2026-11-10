@@ -8,13 +8,15 @@ Deadline: **Fri 13 Nov 2026, 01:30 IST** (Thu 12 Nov, 12:00 PT). Aim to submit b
 - [x] Real PayPal sandbox: holds, partial final capture, void, decline, refund, Payouts, Subscriptions ([spike results](../spikes/RESULTS.md), `npm run sandbox:week`)
 - [x] CI green on `main`: lint, types, tests, build
 - [x] README with screenshots, sponsors table, Deploy to Render button, Postman collection
-- [x] Two-minute demo video recorded on the real sandbox: `brag-output/demo.mp4`
+- [x] Two-minute demo video of the whole tour: `brag-output/demo.mp4` (recorded on the stand-in on 10 Nov; re-recorded on the sandbox below)
+- [x] Channel3 key in local `.env`; search checked live, and results that aren't the same product are rejected ([spike results](../spikes/RESULTS.md))
 
 ## Must do (the submission is incomplete without these)
 
 - [ ] **Give the sandbox business account a large balance.** Each guided tour pays suppliers about $800 through Payouts, and the "Collective US" account ran out (`INSUFFICIENT_FUNDS`) after a few test runs. Without a big balance, payouts fail for judges after a handful of tours. In developer.paypal.com, go to Testing Tools > Sandbox Accounts > Create account, choose Business and United States, and set a PayPal balance of 9,999,999 USD. Then create an app on that account (Apps & Credentials > Create App) and put its Client ID and Secret into `.env` and Render.
 
-- [ ] **Deploy on Render.** Use the Deploy to Render button in the README, or New > Blueprint with this repo. When Render prompts for secrets, enter the same values as your local `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PERSONAL_EMAIL`, `GEMINI_API_KEY`, `GROQ_API_KEY`. Leave the others blank for now.
+- [ ] **Re-record the video on the sandbox** (I do this, about 15 minutes). The shoot was ready, but the payout step failed with `INSUFFICIENT_FUNDS`, so it waits on the large-balance account above.
+- [ ] **Deploy on Render.** Use the Deploy to Render button in the README, or New > Blueprint with this repo. When Render prompts for secrets, enter the same values as your local `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PERSONAL_EMAIL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `CHANNEL3_API_KEY`. Leave the others blank for now.
 - [ ] **Check the deploy.** `https://<service>.onrender.com/api/health` should return `{"ok":true,"paypal":"sandbox"}`. Then complete the guided tour once from a private window. Every visitor shares one demo week, so if two people tour at once they can move each other's steps. The testing notes tell judges to press Start over if that happens.
 - [ ] **Add the PayPal webhook.** In developer.paypal.com, open Apps & Credentials, then the **Collective US** app, then Add Webhook. Use the URL `https://<service>.onrender.com/api/webhooks/paypal` and select all payment events. Copy the Webhook ID into Render as `PAYPAL_WEBHOOK_ID` and redeploy.
 - [ ] **Make the repo public.** Anshum does this: GitHub, Settings, Danger zone, Change visibility.
@@ -26,7 +28,6 @@ Deadline: **Fri 13 Nov 2026, 01:30 IST** (Thu 12 Nov, 12:00 PT). Aim to submit b
 
 - [ ] **Narrate the video.** Your own voice over `brag-output/demo.mp4`; the tour's card titles work as a script. Judges may score from the video alone.
 - [ ] **Add evidence from a real building.** Collect real grocery lists from 10 to 15 households, and I'll turn them into the README's "Evidence from a real building" section with the measured saving.
-- [ ] **Add a Channel3 key** (promo code `PAYPAL-HACKATHON-2026`) as `CHANNEL3_API_KEY` locally and on Render, so retail prices are live.
 
 ## Housekeeping
 

@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { DB } from "../../db";
 import { product } from "../../db/schema";
 import { asData, llmJSON, runAgent } from "../llm";
-import { channel3Enabled, channel3Search } from "../../channel3";
+import { channel3Enabled, channel3Search, sameProduct } from "../../channel3";
 import { newId } from "../../util/ids";
 import { searchTextFor } from "../../db/seed";
 
@@ -124,7 +124,7 @@ Rules:
 /** Create a catalog product from the top Channel3 result (identity + retail reference price). */
 export async function addFromChannel3(db: DB, query: string): Promise<Prod | null> {
   try {
-    const [top] = (await channel3Search(query, 3)).filter((r) => r.priceCents);
+    const [top] = (await channel3Search(query, 3)).filter((r) => r.priceCents && sameProduct(query, r.title));
     if (!top) return null;
     const row: Prod = {
       id: newId("prd"),

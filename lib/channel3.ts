@@ -14,6 +14,22 @@ const pickPrice = (p: any): number | null => {
   return null;
 };
 
+const UNITS = new Set(["count", "pack", "packs", "roll", "rolls", "gal", "oz", "lb", "lbs", "kg"]);
+// Things Channel3 returned for grocery searches that are about the food, not the food itself.
+const NOT_FOOD = new Set(["scoop", "cooker", "brewer", "maker", "bottle", "bottles", "ornament", "guide", "book", "plate", "bowl", "holder", "toy", "treats", "feed"]);
+const words = (s: string) => s.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2 && !UNITS.has(w));
+
+/**
+ * Pure: whether a Channel3 result is the product named, not just something that shares a word with it.
+ * Channel3's catalogue is mostly not groceries ("jasmine rice" finds rice cookers), so every word of the
+ * name, up to any comma or bracket, must appear in the result's title, and it must not be a tool or toy.
+ */
+export function sameProduct(name: string, resultTitle: string): boolean {
+  const need = words(name.split(/[,(]/)[0]);
+  const have = new Set(words(resultTitle));
+  return need.length > 0 && need.every((w) => have.has(w)) && ![...have].some((w) => NOT_FOOD.has(w) && !need.includes(w));
+}
+
 export async function channel3Search(query: string, limit = 5): Promise<C3Product[]> {
   if (!channel3Enabled()) return [];
   const res = await fetch("https://api.trychannel3.com/v1/search", {

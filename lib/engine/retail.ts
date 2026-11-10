@@ -3,7 +3,7 @@
 import { eq, inArray, not } from "drizzle-orm";
 import type { DB } from "../db";
 import * as s from "../db/schema";
-import { channel3Enabled, channel3Search } from "../channel3";
+import { channel3Enabled, channel3Search, sameProduct } from "../channel3";
 import { fmt } from "../util/money";
 import { PolicyError } from "./pricing";
 import { log } from "./ledger";
@@ -33,7 +33,8 @@ export async function refreshRetailPrices(db: DB, actor: string) {
   for (let i = 0; i < products.length; i += 5) {
     await Promise.all(
       products.slice(i, i + 5).map(async (p) => {
-        const results = await channel3Search([p.brand, p.title, p.packSize].filter(Boolean).join(" "), 5).catch(() => []);
+        const found = await channel3Search([p.brand, p.title, p.packSize].filter(Boolean).join(" "), 5).catch(() => []);
+        const results = found.filter((r) => sameProduct(p.title, r.title));
         if (results.length) checked++;
         const cents = pickRetailCents(p.retailRefCents, results.map((r) => r.priceCents));
         if (cents === null) return;
