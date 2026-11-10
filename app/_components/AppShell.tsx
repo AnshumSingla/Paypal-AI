@@ -45,7 +45,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const [society] = await db.select().from(s.society).limit(1);
   const role = user?.role ?? "resident";
   const pages = PAGES[role] ?? [];
-  const firstName = (user?.name ?? "").split(" ")[0];
+  const firstName = role === "operator" ? "Ops team" : (user?.name ?? "").split(" ")[0];
   const today = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date());
 
   return (

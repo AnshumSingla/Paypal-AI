@@ -27,7 +27,7 @@ export async function CycleBar({ cycle, societyName }: { cycle: typeof s.cycle.$
     <>
     <header className="mb-6">
       <h1 className="text-3xl font-semibold tracking-tight">
-        {greeting()}, {(user?.name ?? "").split(" ")[0]}
+        {greeting()}, {user?.role === "operator" ? "Ops team" : (user?.name ?? "").split(" ")[0]}
       </h1>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
         <span className="chip border border-line-strong bg-surface text-ink">{cycle.weekLabel}</span>

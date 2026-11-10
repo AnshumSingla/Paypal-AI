@@ -55,7 +55,7 @@ export default async function ResidentPage() {
           value={held || settled ? fmt(basket!.basket.ceilingCents) : "None"}
           sentence={held ? "approved, not charged yet" : settled ? "was the most you could pay" : "you approve once, at Confirm"}
         />
-        <Stat icon={<TrendingDown size={20} />} tone="accent" title={settled ? "Charged" : "If cutoff were now"} value={settled ? fmt(paid) : basket?.lines.length ? fmt(estimate) : "Not yet"} sentence={settled ? "the price the building reached" : "falls as neighbours join"} />
+        <Stat icon={<TrendingDown size={20} />} tone="accent" title={settled ? "You paid" : "If cutoff were now"} value={settled ? fmt(paid) : basket?.lines.length ? fmt(estimate) : "Not yet"} sentence={settled ? (basket!.basket.refundedCents ? `after a ${fmt(basket!.basket.refundedCents)} refund` : "the price the building reached") : "falls as neighbours join"} />
         <Stat icon={<PiggyBank size={20} />} tone="success" title="Saved against retail" value={settled && retailKept > 0 ? fmt(Math.round(retailKept - paid)) : "After cutoff"} sentence={settled && retailKept > 0 ? `${Math.round(((retailKept - paid) / retailKept) * 100)}% less` : undefined} />
       </StatRow>
 
