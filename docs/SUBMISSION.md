@@ -1,79 +1,188 @@
 # Submission kit
 
-Everything for the Devpost form and the video, in one place. Fill the three blanks marked **[ ]** before submitting.
+Everything the Devpost form asks for, in the order of the hackathon's "What to Submit" list, ready to paste. Before submitting, fill the blanks marked **[ ]**: the hosted demo URL, the YouTube URL and the sandbox personal login. Then tick the checks in the last section.
+
+## At a glance
+
+| Requirement | What we submit | Status |
+|---|---|---|
+| Project built with the required tools | Collective, built on PayPal (Orders, Payments, Payouts, Subscriptions, webhooks) with Gemini and Groq | Done |
+| Text description | [Text description](#1-text-description) below | Ready to paste |
+| Functional demo | Hosted demo URL, plus run instructions in the README (no keys needed) | Hosted URL **[ ]**; instructions done |
+| Tools used and how | [Tools](#3-tools-models-and-ai-services) below | Ready to paste |
+| Public repo with source, assets, instructions and a visible licence | https://github.com/AnshumSingla/Paypal-AI, MIT `LICENSE` at the root | Anshum must make it **public** |
+| Demo video under 3 minutes, on YouTube, public, no copyrighted music | `brag-output/demo.mp4`, 2:01, no music | Upload **[ ]** |
+
+---
 
 ## Devpost fields
 
-**Name:** Collective
+**Project name:** Collective
 
-**Tagline (under 200 characters):** Your housing society buys groceries in bulk. Approve once with PayPal; an AI Society Secretary gets trusted suppliers to compete; pay only the price the building unlocked.
+**Tagline (under 200 characters):**
+Your housing society buys groceries in bulk. Approve once with PayPal; an AI Society Secretary gets trusted suppliers to compete; pay only the price the building unlocked.
 
-**Links:** GitHub repo https://github.com/AnshumSingla/Paypal-AI (MIT licence detected; the repo must be switched to **public** before submitting). Hosted demo on Render **[ ]**. YouTube video **[ ]**.
+**Built with:**
+paypal, paypal-server-sdk, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, apimatic, gemini, groq, ag-grid, ag-studio, channel3, bryntum, render, next.js, react, typescript, postgresql, pglite, drizzle, zod
 
-**Built with:** paypal, paypal-server-sdk, apimatic, bryntum, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, gemini, groq, ag-grid, ag-studio, channel3, render, next.js, typescript, postgresql, drizzle
+**Links:**
+- Code: https://github.com/AnshumSingla/Paypal-AI
+- Hosted demo: **[ ]** (the Render URL, e.g. `https://collective-xxxx.onrender.com`)
+- Video: **[ ]** (the public YouTube URL)
 
-## Description (paste into "About the project")
+---
+
+## 1. Text description
+
+Paste into "About the project".
 
 ### Inspiration
 In an Indian housing society, forty flats buy the same rice, dal, oil and eggs every week, one by one, at retail. Wholesalers would charge 10 to 30% less, but only above a minimum order no single flat reaches. A volunteer usually pools orders in a WhatsApp group, chases payments and fronts the money. It breaks at about fifteen households, and the volunteer carries the risk.
 
 ### What it does
 Collective does the volunteer's job with an AI agent and moves the money risk to PayPal.
-1. Residents type a list or photograph a handwritten one; the AI turns it into products.
-2. Each product becomes a pool. Local suppliers bid a ladder of prices that fall as the order grows.
-3. Each resident approves **one PayPal hold for the highest price** their items could cost. As neighbours join, the price falls for everyone.
-4. The **Society Secretary**, an AI agent, tells each supplier how many households and dollars are already authorized in PayPal and asks for a lower price at that quantity.
-5. At cutoff PayPal **captures only the price the building unlocked**; the rest of every hold goes back. Failed pools are voided.
-6. If something is missing, the Secretary refunds it through PayPal itself, within limits set in code. Suppliers are paid with PayPal Payouts after 24 hours.
+1. Residents type a list or photograph a handwritten one; the AI turns it into products and blocks anything that can't be sold (alcohol, tobacco, medicines).
+2. Each product becomes a pool. Local suppliers bid a ladder of prices that fall as the order grows. Suppliers see totals only, never who ordered what.
+3. Code ranks the bids on price, the supplier's verified track record and whether the minimum is reachable, so the cheapest supplier doesn't win by default. The AI explains each ranking to the society captain.
+4. Each resident approves **one PayPal hold for the highest price** their items could cost. As neighbours join, the price falls for everyone in the pool.
+5. **Money on the table:** the Society Secretary, an AI agent, tells each winning supplier how many households and dollars are already authorized in PayPal and asks for a lower price at that quantity. Prices can only go down.
+6. At cutoff PayPal **captures only the price the building unlocked**; the rest of every hold goes back. A pool that misses its minimum is released and nobody pays for it. A declined card affects only that flat.
+7. If something is missing or damaged, the Secretary refunds it through PayPal itself, within limits set in code; bigger claims go to the captain. Suppliers are paid with PayPal Payouts after a 24-hour window for problems, minus commission and refunds.
 
-### How we built it (technological implementation)
-- **PayPal:** Orders v2 with `intent=AUTHORIZE`, Payments v2 authorize, partial capture with `final_capture`, void, get authorization, refunds, Payouts, Subscriptions (catalog, plans) for supplier plans, and verified webhooks. Orders and Payments run on PayPal's official Server SDK (generated by APIMatic). Every POST carries a `PayPal-Request-Id`. A double-entry ledger records every charge, fee, refund, commission and payout and must balance.
-- **AI:** free-tier Gemini, with Groq as fallback: one tool-using agent with eight tools, plus vision for handwritten lists and photo complaints, zod-validated JSON outputs, and an AI analyst in AG Studio. Every decision is logged with its model.
-- **Safety by construction:** no agent can capture, void or pay out. The Secretary's refund tool is checked in code ($10 maximum, never above what was charged, once per issue). A supplier's new price can only be lower, never below its floor, and never changes the first price that holds were sized on, so every capture fits its hold.
-- **Trust:** supplier scores come from verified deliveries and upheld complaints, smoothed and weighted to recent weeks. Bids are scored price 40, trust 45, reachable minimum 15, so the cheapest supplier doesn't win by default.
-- **Sponsor tools:** AG Grid for the demand board, ledger and AI log, and AG Studio for analytics with an AI analyst; Channel3 for unfamiliar products and for retail prices taken from today's listings, so savings are measured against a real price; APIMatic through PayPal's generated Server SDK; a Bryntum Scheduler timeline that shows residents when their hold is charged; Render for hosting, with a health check that reaches the database.
-- **Reliability:** 57 automated tests, including a full week, a second week after reset, a failed void not blocking cutoff, idempotent re-runs, restart recovery and the guided demo end to end. Works with no keys (PayPal stand-in, rule-based AI).
+### How we built it
+- **PayPal:** Orders v2 with `intent=AUTHORIZE`, authorization, partial capture with `final_capture`, void, get authorization, refunds, Payouts, Subscriptions (catalog and plans) for supplier plans, and verified webhooks. Orders and Payments run on PayPal's official Server SDK, generated by APIMatic. Every POST carries a `PayPal-Request-Id`, so a retry never charges twice. A double-entry ledger records every charge, fee, refund, commission and payout and must balance to the cent.
+- **AI:** one tool-using agent (the Society Secretary) with eight tools, plus agents for reading lists and photos, explaining bids, suggesting supplier price ladders, assessing complaints, and an AI analyst in AG Studio. Gemini runs first and Groq takes over if Gemini is rate-limited or down. Every reply is validated JSON and every decision is logged with the model that made it.
+- **Safety by construction:** no agent can capture, void or pay out; only the engine does. The Secretary's refund tool is checked in code ($10 maximum, never above what was charged, a limited number per flat). A supplier's new price can only be lower, never below its floor, and never changes the first price the holds were sized on, so every capture fits inside its hold.
+- **Trust:** supplier scores come from verified deliveries and upheld complaints, smoothed for small samples and weighted to recent weeks. Bids are scored price 40, trust 45, reachable minimum 15.
+- **Stack:** Next.js 16, React 19, TypeScript, Drizzle on Postgres (PGlite locally and on the free hosted demo), deployed on Render.
+- **Reliability:** 57 automated tests, including a full week, a second week after reset, a failed void not blocking cutoff, idempotent re-runs, restart recovery and the guided tour end to end. The whole week also runs on the real PayPal sandbox (`npm run sandbox:week`). With no keys at all it runs on a PayPal stand-in and rule-based AI, so anyone can try it.
 
 ### Design
-One calm interface for four people: resident, society captain, supplier and operator. A guided demo bar walks the whole week with one button per step. The receipt shows approved, paid and released, with the PayPal ID of each step and a "Check this with PayPal" button.
+One calm interface for four people: resident, society captain, supplier and operator. A guided tour walks the whole week with one button per step, spotlights the part of the page each step is about, says what could go wrong, and at the edge cases lets you choose what happens. The receipt shows approved, paid and released, with the PayPal ID of each step and a "Check this with PayPal" button.
 
 ### Potential impact
 Households save on staples they buy anyway; the volunteer stops fronting money; small local suppliers get funded, consolidated orders and a reputation they earn by delivering. The same pattern (approve a maximum, pay what the group unlocked) works for any community purchase: school supplies, maintenance, solar.
 
-### What's new (innovation)
-- **The PayPal hold is the agent's budget**: the spending limit lives in the payment rail, not in a prompt.
-- **Money on the table**: an agent negotiates with funds that are already authorized.
-- **Trust beats cheap**, from verified payment and delivery facts rather than star ratings.
+### What's new
+- **The PayPal hold is the agent's budget:** the spending limit lives in the payment rail, not in a prompt.
+- **Money on the table:** an agent negotiates with funds that are already authorized.
+- **Trust beats cheap:** suppliers are ranked on verified payment and delivery facts, not star ratings.
 
-### Challenges, accomplishments, what we learned, what's next
-- Making partial capture, void and refund safe to retry and safe after a crash.
-- Next: PayPal Multiparty so suppliers are paid directly with `platform_fees`; cross-society pools; a local payment partner for rupee payments in India.
+### Challenges, what we learned, what's next
+- Making partial capture, void and refund safe to retry and safe after a crash, and keeping PayPal calls fast without letting database writes overlap.
+- Learned: a declined sandbox card comes back as a successful response with a `DENIED` authorization, not an error, so a hold has to be checked, not assumed. Retail-price search needs a same-product check, or "jasmine rice" matches rice cookers.
+- Next: PayPal Multiparty so suppliers are paid directly with `platform_fees`; pools across several societies; a local payment partner for rupee payments in India.
 
 ### Honest limits
-Sandbox only. The Pune demo runs in US dollars because PayPal doesn't process domestic rupee payments.
+PayPal sandbox only; no real money moves. The Pune demo runs in US dollars because PayPal doesn't process domestic rupee payments. The hosted demo is one shared building on a free server.
 
-## Testing instructions (paste into "Testing instructions")
-1. Open the hosted demo **[ ]** or run locally: `npm install && npm run dev`, then http://localhost:3000. No keys are needed.
+---
+
+## 2. Functional demo
+
+**Hosted demo:** **[ ]**
+
+**Run it yourself** (also in the README under "Run it locally"). Requires Node.js 22 or newer; no database or keys needed.
+
+```bash
+git clone https://github.com/AnshumSingla/Paypal-AI.git
+cd Paypal-AI
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 and press **Take the guided tour**. Without keys, PayPal runs on a built-in stand-in and the AI on rule-based fallbacks. To use the real PayPal sandbox and the AI models, copy `.env.example` to `.env.local` and add `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `GEMINI_API_KEY` and `GROQ_API_KEY` (the README's "Keys" table says where to get each). `npm test` runs the 57 tests.
+
+### Testing instructions (paste into "Testing instructions")
+1. Open the hosted demo **[ ]**, or run it locally as above (no keys needed).
 2. Press **Take the guided tour** on the home page. Each step spotlights the part of the page it is about, explains what could go wrong, and runs for real, opening the right person's view. Arrow key to continue, Esc to hide, **Resume** to bring it back.
 3. At the edge cases, choose what happens: a neighbour's card is declined, or Ananya withdraws and her hold is voided; a missing pack the Secretary refunds itself, or a bigger claim the captain approves or rejects.
-4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**.
+4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**, which needs no login.
 5. **Start over** on the home page (or Reset under Manual controls) returns to Week 46 at any time.
 6. The hosted demo runs on a free server that sleeps when nobody is using it, so the first page can take about a minute to load. It wakes with a fresh week.
-7. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over** on the home page; a full tour takes about three minutes.
+7. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over**; a full tour takes about three minutes.
 
-## Video script (2 minutes 45 seconds)
+---
 
-`brag-output/demo.mp4` is already recorded from a real sandbox run: the whole guided tour, typed captions, keystroke sounds, no music. It works as it is, or with this voice-over read on top. (Timings below are for a narrated cut; the recorded video runs about 2 minutes.)
+## 3. Tools (models and AI services)
+
+Paste into the field that asks which tools were used and how.
+
+**AI models and services in the app**
+
+| Tool | Where it is used | How |
+|---|---|---|
+| **Google Gemini** (`gemini-3.8-flash`, free tier, through Google AI Studio's OpenAI-compatible API) | Every AI feature, tried first | The Society Secretary is a tool-calling agent: it reads pool status, supplier records and complaints through eight tools, asks suppliers for lower prices with the money already authorized, refunds small claims and escalates bigger ones. Gemini also reads typed and photographed shopping lists into products, explains bid rankings, suggests supplier price ladders, checks complaint photos, and powers the AG Studio analyst that builds charts from a question. |
+| **Groq** (`openai/gpt-oss-120b`) | Fallback for every text feature | Used automatically when Gemini is rate-limited or unavailable, through the same OpenAI-compatible client (`lib/ai/llm.ts`). |
+| **PayPal REST APIs and Server SDK** | All money movement | Authorize holds, partial final capture, void, refunds, Payouts to suppliers, Subscriptions for supplier plans, webhook verification. The Orders and Payments calls use PayPal's APIMatic-generated Server SDK. |
+| **Channel3** product search API | Retail prices and unfamiliar products | Sets each product's retail reference from today's listings (lower median, outliers ignored, results that aren't the same product rejected), and identifies items on a resident's list that the catalogue doesn't know. |
+| **AG Grid and AG Studio** | Operator and captain views | Demand board, ledger and AI decision grids; analytics dashboards with an AI analyst wired to the same Gemini/Groq client. |
+| **Bryntum Scheduler** | Resident and captain pages | The week's timeline: when lists close, bids, the PayPal hold and charge, delivery, the problem window and payouts. |
+| **Render** | Hosting | `render.yaml` blueprint with a health check that reaches the database. |
+
+Guardrails on the AI: replies are validated against zod schemas, tool inputs are checked before any tool runs, refunds are capped in code, and the hosted demo limits AI calls per hour. Every agent has a rule-based fallback, so the product works with no AI key.
+
+**Tools used to build it**
+
+The code was written with **Claude Code** (Anthropic), using PayPal's AI Toolkit and APIMatic's Context Plugin for the PayPal integration. The app itself does not call Claude: at runtime its AI is Gemini and Groq as listed above.
+
+---
+
+## 4. Public code repository
+
+- URL: https://github.com/AnshumSingla/Paypal-AI
+- Licence: MIT, in `LICENSE` at the root. GitHub shows it in the repo's About section once the repo is public.
+- Contains all source, assets (including the demo videos and sound effects), tests, the Render blueprint, a Postman collection and the run instructions in the README.
+- **To do (Anshum):** GitHub, Settings, Danger zone, Change visibility, Public. Then check that "MIT license" appears in the About section on the repo's front page.
+
+---
+
+## 5. Demo video
+
+**File:** `brag-output/demo.mp4`, 2 minutes 1 second, 1920x1080. Upload it to YouTube as **Public** (not unlisted or private) and paste the link into the form.
+
+**Why it meets the rules**
+- Under 3 minutes.
+- Shows the project working in a desktop web browser, which is what it was built for: the whole guided week on the real PayPal sandbox, from the shopping list to supplier payouts, with real sandbox PayPal IDs on screen.
+- No music. The only sounds are keystrokes and a mouse click from Kenney's free sound packs (CC0, public domain; credited in `brag-output/demo/sfx/README.md`).
+- No third-party copyrighted material. The PayPal button and marks appear because this is a PayPal integration built for PayPal's own hackathon; other tools are named only in a "Built with" list. The people and shops in the demo are fictional.
+
+**YouTube title:**
+Collective: one PayPal hold per flat, an AI Secretary that negotiates (PayPal AI Hackathon)
+
+**YouTube description:**
+Collective helps a housing society buy groceries in bulk. Each flat approves one PayPal hold for the most it could pay. An AI Society Secretary gets local suppliers to compete, then goes back to them with the money already authorized to push prices lower. At cutoff PayPal charges only the price the whole building unlocked, and the rest of every hold goes back.
+
+This video walks the whole week on the real PayPal sandbox: lists, supplier bids, holds, a declined card, the Secretary negotiating, partial capture, a refund and supplier payouts.
+
+Code: https://github.com/AnshumSingla/Paypal-AI
+Built for the PayPal AI Hackathon. Sandbox only; no real money moves. Sounds: Kenney (CC0).
+
+**Optional voice-over**, timed to the recorded video (read on top; there is no music to fight):
 
 | Time | On screen | Voice-over |
 |---|---|---|
-| 0:00 | Landing page, last week's example card | "Forty flats in a Pune housing society buy the same rice and dal every week, one by one, at retail. Together they'd pay wholesale. Collective makes that happen, with PayPal and an AI Society Secretary." |
-| 0:15 | Resident, step 1: Ananya's list becomes products | "Ananya types her list, or photographs it. The AI turns it into products." |
-| 0:25 | Captain, steps 2 to 4: bids, "Recommend ... despite costing more" | "Local suppliers bid price ladders. The Secretary ranks them on price and a trust score built from real deliveries and complaints, so the cheapest supplier doesn't win by default." |
-| 0:50 | Resident, step 5: PayPal popup, hold placed | "Ananya approves one PayPal hold for the most she could pay. That hold is the limit; nobody can charge more." |
-| 1:05 | Step 6 twice: tier bars move, price drops | "As neighbours join, the price falls for everyone." |
-| 1:15 | Captain, step 7: Secretary feed, supplier lowers price | "Then the Secretary goes back to each supplier: nineteen households, $168 already authorized in PayPal. Will you go lower? Prices can only go down." |
-| 1:35 | Step 8 and receipt: approved struck through, paid, PayPal IDs; PayPal sandbox account | "At cutoff PayPal captures only the price the building unlocked, and releases the rest. Here it is in the sandbox." |
-| 1:55 | Step 10: missing pack refunded by the Secretary | "A pack is missing. The Secretary checks the claim and refunds it through PayPal itself, within limits set in code." |
-| 2:10 | Supplier payouts, operator ledger "Balanced", Analytics, ask the AI analyst | "Suppliers are paid with PayPal Payouts. The ledger balances to the cent, and the operator can ask questions of the data." |
-| 2:30 | "Who may do what" table from the README | "The agent decides; code sets the limits; PayPal moves the money. Collective: wholesale prices for every housing society." |
+| 0:00 | Title, the problem, the idea | "Forty flats in a Pune housing society buy the same rice, dal and eggs every week, one by one, at retail. Collective lets them buy together, with PayPal and an AI Society Secretary." |
+| 0:16 | Landing page | "This is the real app on the PayPal sandbox." |
+| 0:20 | Steps 1 and 2: Ananya's list, collection closes | "Ananya types her list. The AI turns it into products and blocks the beer." |
+| 0:31 | Steps 3 and 4: bids, "Trust beats cheap" | "Local suppliers bid price ladders. Code ranks them on price and verified trust, so the cheapest doesn't win by default." |
+| 0:41 | Step 5: Ananya's PayPal hold | "Ananya approves one PayPal hold for the most she could pay. Nobody can charge more." |
+| 0:47 | Step 6: neighbours join | "Neighbours join and the price falls for everyone. One card is declined; only that flat drops out." |
+| 0:58 | Step 7: money on the table | "The Secretary tells the supplier: 18 households have $168.56 authorized in PayPal. Will you go lower? It does." |
+| 1:03 | Steps 8 and 9: cutoff, receipt | "At cutoff PayPal captures only the price the building unlocked and releases the rest. Every step has its PayPal ID." |
+| 1:14 | Step 10: missing item, the captain decides | "A whole item is missing. It's over the Secretary's $10 limit, so the captain approves the refund through PayPal." |
+| 1:25 | Steps 11 and 12: payouts, the week in numbers | "Suppliers are paid with PayPal Payouts, minus commission and refunds. The ledger balances to the cent." |
+| 1:35 | Receipt, operator console, analytics | "Each role sees its own view, and the operator can ask the AI analyst about the data." |
+| 1:48 | Built with, closing line | "Approve the max. Pay what the building unlocked. That's Collective." |
+
+A 29-second launch film for social posts and the README is in `brag-output-2026-11-11-023203/brag.mp4`; it is not the submission video.
+
+---
+
+## Final checks before pressing Submit
+
+- [ ] Repo is public, and the About section shows the MIT licence.
+- [ ] Hosted demo URL opens (allow a minute to wake) and `/api/health` returns `{"ok":true,"paypal":"sandbox"}`.
+- [ ] YouTube video is **Public** and plays signed out.
+- [ ] The three **[ ]** blanks above are filled, in this file and on the form.
+- [ ] Both team members are added on Devpost, and the sponsor prizes you qualify for are ticked (AG Grid, plus any others the form lists that we use).

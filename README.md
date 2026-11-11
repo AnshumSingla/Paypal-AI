@@ -87,7 +87,7 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settle
 
 - **Society Secretary** (`lib/ai/secretary.ts`): one tool-calling agent (Gemini, with Groq as fallback) driven by a small OpenAI-compatible loop in `lib/ai/llm.ts`. Tools: `get_status`, `get_supplier_record`, `get_issue`, `issue_refund`, `escalate_to_captain`, `request_better_price`, plus `get_my_basket` and `get_my_record` scoped to residents and suppliers. It decides every reported problem as it comes in, negotiates when the captain asks it to, and answers questions from every role.
 - **Basket Assistant** (photo and text lists), **Pricing Copilot** (suggested price ladders for suppliers), **bid explanations**, **issue assessment** (photo checks), and an **AG Studio analyst** that builds charts from a question.
-- Free-tier models: Gemini `gemini-2.5-flash` first, Groq `llama-3.3-70b-versatile` (vision: `llama-4-scout`) if Gemini is rate-limited or down. Replies are JSON checked with zod; tool inputs are checked before a tool runs.
+- Free-tier models: Gemini `gemini-3.8-flash` first (text and photos), then Groq `openai/gpt-oss-120b` if Gemini is rate-limited or down. Both can be changed with `GEMINI_MODEL`, `GROQ_MODEL` and `GROQ_VISION_MODEL`; photos need Gemini unless a Groq vision model is set. Replies are JSON checked with zod; tool inputs are checked before a tool runs.
 - **Works without a key:** every agent has a rule-based fallback, so the whole week runs offline. A public demo is capped at `AI_CALLS_PER_HOUR` (default 300) AI calls.
 
 ## Sponsor tools
@@ -99,7 +99,7 @@ Every POST carries a `PayPal-Request-Id`, so retries never double-charge. Settle
 | **Bryntum Scheduler** | "This week, step by step" on the resident and captain pages: when lists close, when suppliers bid, when the PayPal hold is placed and charged, the drop, the 24-hour problem window and supplier payouts (`app/_components/WeekTimelineView.tsx`, `lib/schedule.ts`) |
 | **APIMatic** | PayPal's APIMatic-generated Server SDK carries every hold, capture, void and refund (`lib/paypal/gateway.ts`); the APIMatic Context Plugin was used in Claude Code while building it |
 | **Postman** | A collection of the exact PayPal sandbox calls Collective makes, runnable top to bottom (`docs/postman/`) |
-| **Render** | `render.yaml` blueprint: web service and managed Postgres, a health check that reaches the database, and a Deploy to Render button |
+| **Render** | `render.yaml` blueprint: one free web service, a health check that reaches the database, and a Deploy to Render button |
 
 ## Run it locally
 
