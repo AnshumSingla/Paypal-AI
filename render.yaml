@@ -1,19 +1,17 @@
-# Render Blueprint for Collective: web service + managed Postgres. Deploy with New > Blueprint on render.com.
-# Paid plans (starter web, basic Postgres) so the demo stays awake and its data persists through judging.
+# Render Blueprint for Collective: one free web service. Deploy with New > Blueprint on render.com.
+# Free plan: the service sleeps after 15 minutes without visitors and takes about a minute to wake.
+# No managed Postgres (Render deletes free databases after 30 days): the app uses its embedded PGlite,
+# which starts empty on each wake and seeds the demo week itself. Set DATABASE_URL to use Postgres instead.
 # Secrets (PayPal, Gemini, Groq, Channel3, AG Studio) are prompted for at deploy time (sync: false).
 services:
   - type: web
     name: collective
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: collective-db
-          property: connectionString
       - key: NODE_VERSION
         value: "22"
       - key: DEMO_MODE
@@ -36,8 +34,3 @@ services:
         sync: false
       - key: AG_STUDIO_LICENSE
         sync: false
-
-databases:
-  - name: collective-db
-    plan: basic-256mb
-    databaseName: collective

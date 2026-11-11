@@ -151,7 +151,7 @@ npm test
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AnshumSingla/Paypal-AI)
 
-Or New > Blueprint > select this repo. `render.yaml` creates the web service and a Postgres database and prompts for the secrets. Render routes traffic only after `/api/health` reaches the database, so a deploy that can't connect never replaces a working one. After the first deploy, register `https://<service>.onrender.com/api/webhooks/paypal` as the PayPal webhook URL and set `PAYPAL_WEBHOOK_ID`.
+Or New > Blueprint > select this repo. `render.yaml` creates one web service on Render's free plan and prompts for the secrets. It uses the embedded PGlite database, so there is nothing else to create: each time the service wakes it starts a fresh demo week. A free service sleeps after 15 minutes without visitors and takes about a minute to wake. For a persistent database, set `DATABASE_URL` to any Postgres URL. Render routes traffic only after `/api/health` reaches the database, so a deploy that can't start never replaces a working one. After the first deploy, register `https://<service>.onrender.com/api/webhooks/paypal` as the PayPal webhook URL and set `PAYPAL_WEBHOOK_ID`.
 
 ## Honest limits
 

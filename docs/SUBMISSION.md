@@ -58,7 +58,8 @@ Sandbox only. The Pune demo runs in US dollars because PayPal doesn't process do
 3. At the edge cases, choose what happens: a neighbour's card is declined, or Ananya withdraws and her hold is voided; a missing pack the Secretary refunds itself, or a bigger claim the captain approves or rejects.
 4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**.
 5. **Start over** on the home page (or Reset under Manual controls) returns to Week 46 at any time.
-6. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over** on the home page; a full tour takes about three minutes.
+6. The hosted demo runs on a free server that sleeps when nobody is using it, so the first page can take about a minute to load. It wakes with a fresh week.
+7. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over** on the home page; a full tour takes about three minutes.
 
 ## Video script (2 minutes 45 seconds)
 
