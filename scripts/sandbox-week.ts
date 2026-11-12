@@ -2,7 +2,9 @@
 // sandbox and prints every PayPal id it created, so they can be matched in the sandbox dashboard.
 // Usage: npx tsx scripts/sandbox-week.ts   (needs PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET)
 import { loadEnvConfig } from "@next/env";
+import { trimEnv } from "../lib/env";
 loadEnvConfig(process.cwd(), true, { info() {}, error() {} });
+trimEnv();
 
 async function main() {
   const { eq } = await import("drizzle-orm");
