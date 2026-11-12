@@ -8,6 +8,7 @@ import { societyContext } from "@/lib/queries";
 import { TOUR_TOTAL, tourStep } from "@/lib/engine/tour";
 import { demoMode } from "@/lib/engine/demo";
 import { landingFacts } from "@/lib/landing";
+import { PendingButton } from "@/app/_components/PendingButton";
 
 const ROLE_COPY: Record<string, { title: string; body: string }> = {
   resident: { title: "Resident", body: "Lists, one PayPal hold, the receipt." },
@@ -65,7 +66,9 @@ export default async function Home() {
                 </form>
                 {step.n > 1 ? (
                   <form action={startTourAction.bind(null, true)}>
-                    <button className="btn !border !border-white/40 !bg-transparent !py-3 !text-white hover:!bg-white/10">Start over</button>
+                    <PendingButton className="btn !border !border-white/40 !bg-transparent !py-3 !text-white hover:!bg-white/10" pendingLabel="Resetting the week…">
+                      Start over
+                    </PendingButton>
                   </form>
                 ) : (
                   <a href="#why" className="btn !border !border-white/40 !py-3 !text-white hover:!bg-white/10">
