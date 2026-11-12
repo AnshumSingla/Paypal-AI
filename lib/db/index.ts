@@ -42,6 +42,8 @@ export function getDb(): Promise<DB> {
     .then(async (db) => {
       const { ensureSeeded } = await import("./seed");
       await ensureSeeded(db);
+      const { refreshStaleDemo } = await import("../engine/demo");
+      await refreshStaleDemo(db);
       await restoreMockPayPal(db);
       return db;
     })

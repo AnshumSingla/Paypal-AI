@@ -8,7 +8,7 @@ import { settleAll } from "../util/pool";
 import { CATALOG, DEMAND_PROFILE, rng, seed, SOCIETY_ID, weekDeadlines } from "../db/seed";
 import { cardCheckout, getOrCreateBasket } from "./basket";
 import { ceilingUnit, PolicyError } from "./pricing";
-import { advance, rankPool, submitBid } from "./cycle";
+import { advance, currentCycle, rankPool, submitBid } from "./cycle";
 import { log } from "./ledger";
 import { decideIssue, reportIssue } from "./refunds";
 
@@ -97,6 +97,18 @@ export async function simulateCompetingBids(db: DB, cycleId: string, includePers
 }
 
 /** Wipe everything and re-seed the demo society, including its past weeks. */
+/**
+ * The hosted demo's database is seeded at build time, so a server that boots days later would show an
+ * old week. If nobody has started it yet (still collecting, no list from Ananya), re-seed it for today.
+ */
+export async function refreshStaleDemo(db: DB) {
+  if (!demoMode()) return;
+  const c = await currentCycle(db, SOCIETY_ID);
+  if (!c || c.phase !== "COLLECT" || Date.now() - c.createdAt.getTime() < 24 * 3600 * 1000) return;
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(s.need).where(and(eq(s.need.cycleId, c.id), eq(s.need.householdId, "hh_31")));
+  if (n === 0) await resetDemo(db);
+}
+
 export async function resetDemo(db: DB) {
   for (const t of [s.trustEvent, s.activity, s.webhookEvent, s.aiDecision, s.ledgerEntry, s.payout, s.refund, s.issue, s.payment, s.basketLine, s.basket, s.bid, s.pool, s.need, s.cycle, s.seller, s.appUser, s.household, s.society, s.product]) {
     await db.delete(t);
