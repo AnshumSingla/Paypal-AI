@@ -11,6 +11,8 @@
 | ![Landing page](docs/screenshots/landing.jpg) | ![Guided tour with choices](docs/screenshots/tour-choices.jpg) |
 | ![The captain decides a claim over the Secretary's limit](docs/screenshots/captain-decides.jpg) | ![Analytics in AG Studio](docs/screenshots/analytics.jpg) |
 
+**Try it:** https://collective-mxtv.onrender.com (free server: the first visit can take about a minute to wake). Press **Take the guided tour**.
+
 Built for the PayPal AI Hackathon. PayPal sandbox only: no real money moves.
 
 <!-- Add before submitting: hosted demo URL, YouTube video link, and an "Evidence from a real building" section. -->
@@ -168,6 +170,7 @@ Or New > Blueprint > select this repo. `render.yaml` creates one web service on 
 - [docs/03-POLICIES.md](docs/03-POLICIES.md): money handling, pricing, refunds, trust, AI guardrails
 - [docs/04-BUILD-PLAN.md](docs/04-BUILD-PLAN.md): status and roadmap
 - [docs/SUBMISSION.md](docs/SUBMISSION.md): Devpost text and video script
+- [STEPS.md](STEPS.md): how a teammate submits on Devpost, step by step, without the code
 
 ## License
 

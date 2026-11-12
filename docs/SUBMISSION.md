@@ -1,6 +1,6 @@
 # Submission kit
 
-Everything the Devpost form asks for, in the order of the hackathon's "What to Submit" list, ready to paste. Before submitting, fill the blanks marked **[ ]**: the hosted demo URL, the YouTube URL and the sandbox personal login. Then tick the checks in the last section.
+Everything the Devpost form asks for, in the order of the hackathon's "What to Submit" list, ready to paste. Before submitting, fill the one blank marked **[ ]**: the YouTube URL. Then tick the checks in the last section.
 
 ## At a glance
 
@@ -8,9 +8,9 @@ Everything the Devpost form asks for, in the order of the hackathon's "What to S
 |---|---|---|
 | Project built with the required tools | Collective, built on PayPal (Orders, Payments, Payouts, Subscriptions, webhooks) with Gemini and Groq | Done |
 | Text description | [Text description](#1-text-description) below | Ready to paste |
-| Functional demo | Hosted demo URL, plus run instructions in the README (no keys needed) | Hosted URL **[ ]**; instructions done |
+| Functional demo | Hosted demo URL, plus run instructions in the README (no keys needed) | https://collective-mxtv.onrender.com; instructions done |
 | Tools used and how | [Tools](#3-tools-models-and-ai-services) below | Ready to paste |
-| Public repo with source, assets, instructions and a visible licence | https://github.com/AnshumSingla/Paypal-AI, MIT `LICENSE` at the root | Anshum must make it **public** |
+| Public repo with source, assets, instructions and a visible licence | https://github.com/AnshumSingla/Paypal-AI, MIT `LICENSE` at the root | Public |
 | Demo video under 3 minutes, on YouTube, public, no copyrighted music | `brag-output/demo.mp4`, 2:01, no music | Upload **[ ]** |
 
 ---
@@ -23,11 +23,11 @@ Everything the Devpost form asks for, in the order of the hackathon's "What to S
 Your housing society buys groceries in bulk. Approve once with PayPal; an AI Society Secretary gets trusted suppliers to compete; pay only the price the building unlocked.
 
 **Built with:**
-paypal, paypal-server-sdk, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, apimatic, gemini, groq, ag-grid, ag-studio, channel3, bryntum, render, next.js, react, typescript, postgresql, pglite, drizzle, zod
+paypal, paypal-server-sdk, paypal-orders-v2, paypal-payouts, paypal-subscriptions, paypal-webhooks, apimatic, gemini, groq, ag-grid, ag-studio, channel3, bryntum, render, neon, next.js, react, typescript, postgresql, pglite, drizzle, zod
 
 **Links:**
 - Code: https://github.com/AnshumSingla/Paypal-AI
-- Hosted demo: **[ ]** (the Render URL, e.g. `https://collective-xxxx.onrender.com`)
+- Hosted demo: https://collective-mxtv.onrender.com
 - Video: **[ ]** (the public YouTube URL)
 
 ---
@@ -80,7 +80,7 @@ PayPal sandbox only; no real money moves. The Pune demo runs in US dollars becau
 
 ## 2. Functional demo
 
-**Hosted demo:** **[ ]**
+**Hosted demo:** https://collective-mxtv.onrender.com
 
 **Run it yourself** (also in the README under "Run it locally"). Requires Node.js 22 or newer; no database or keys needed.
 
@@ -94,10 +94,10 @@ npm run dev
 Open http://localhost:3000 and press **Take the guided tour**. Without keys, PayPal runs on a built-in stand-in and the AI on rule-based fallbacks. To use the real PayPal sandbox and the AI models, copy `.env.example` to `.env.local` and add `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `GEMINI_API_KEY` and `GROQ_API_KEY` (the README's "Keys" table says where to get each). `npm test` runs the 57 tests.
 
 ### Testing instructions (paste into "Testing instructions")
-1. Open the hosted demo **[ ]**, or run it locally as above (no keys needed).
+1. Open the hosted demo at https://collective-mxtv.onrender.com, or run it locally as above (no keys needed).
 2. Press **Take the guided tour** on the home page. Each step spotlights the part of the page it is about, explains what could go wrong, and runs for real, opening the right person's view. Arrow key to continue, Esc to hide, **Resume** to bring it back.
 3. At the edge cases, choose what happens: a neighbour's card is declined, or Ananya withdraws and her hold is voided; a missing pack the Secretary refunds itself, or a bigger claim the captain approves or rejects.
-4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**, which needs no login.
+4. Off the tour, approve a hold yourself on the resident's page with **Hold with a PayPal sandbox test card**, which needs no login, or with the PayPal button and any PayPal sandbox personal account.
 5. **Start over** on the home page (or Reset under Manual controls) returns to Week 46 at any time.
 6. The hosted demo runs on a free server that sleeps when nobody is using it, so the first page can take about a minute to load.
 7. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over**; a full tour takes about three minutes.
@@ -184,5 +184,5 @@ A 29-second launch film for social posts and the README is in `brag-output-2026-
 - [ ] Repo is public, and the About section shows the MIT licence.
 - [ ] Hosted demo URL opens (allow a minute to wake) and `/api/health` returns `{"ok":true,"paypal":"sandbox"}`.
 - [ ] YouTube video is **Public** and plays signed out.
-- [ ] The three **[ ]** blanks above are filled, in this file and on the form.
+- [ ] The **[ ]** blank above (YouTube URL) is filled, in this file and on the form.
 - [ ] Both team members are added on Devpost, and the sponsor prizes you qualify for are ticked (AG Grid, plus any others the form lists that we use).
