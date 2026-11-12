@@ -130,7 +130,7 @@ Gulmohar Residency, Pune. **Ananya Kulkarni** is a resident and **Rohan Mehta** 
 | `GROQ_API_KEY` | console.groq.com/keys (free) | Gemini is used alone; with neither key: rule-based fallbacks, photo reading off |
 | `CHANNEL3_API_KEY` | trychannel3.com/developers | Local catalogue only |
 | `AG_STUDIO_LICENSE` | AG Studio trial key | Trial watermark |
-| `DATABASE_URL` | Postgres URL (Render sets it) | Embedded PGlite |
+| `DATABASE_URL` | Postgres URL (the hosted demo uses a free Neon database) | Embedded PGlite |
 | `PAYPAL_MODE=mock`, `AI_MODE=rules` | Optional | Force offline mode even when keys are set |
 
 With sandbox keys, residents approve in the real PayPal popup with a sandbox personal account. Judges without a sandbox login can use **Hold with a PayPal sandbox test card**, which places the same real sandbox hold with PayPal's published test card.
@@ -151,7 +151,7 @@ npm test
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AnshumSingla/Paypal-AI)
 
-Or New > Blueprint > select this repo. `render.yaml` creates one web service on Render's free plan and prompts for the secrets. It uses the embedded PGlite database, so there is nothing else to create: each time the service wakes it starts a fresh demo week. A free service sleeps after 15 minutes without visitors and takes about a minute to wake. For a persistent database, set `DATABASE_URL` to any Postgres URL. Render routes traffic only after `/api/health` reaches the database, so a deploy that can't start never replaces a working one. After the first deploy, register `https://<service>.onrender.com/api/webhooks/paypal` as the PayPal webhook URL and set `PAYPAL_WEBHOOK_ID`.
+Or New > Blueprint > select this repo. `render.yaml` creates one web service on Render's free plan and prompts for the secrets. For `DATABASE_URL`, create a free Postgres on [Neon](https://neon.com) (no card) and paste its connection string: the embedded PGlite used locally needs more memory than the free instance's 512 MB. The build migrates and seeds it. A free service sleeps after 15 minutes without visitors and takes about a minute to wake. Render routes traffic only after `/api/health` reaches the database, so a deploy that can't start never replaces a working one. After the first deploy, register `https://<service>.onrender.com/api/webhooks/paypal` as the PayPal webhook URL and set `PAYPAL_WEBHOOK_ID`.
 
 ## Honest limits
 

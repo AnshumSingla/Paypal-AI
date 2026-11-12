@@ -1,9 +1,9 @@
 # Render Blueprint for Collective: one free web service. Deploy with New > Blueprint on render.com.
 # Free plan: the service sleeps after 15 minutes without visitors and takes about a minute to wake.
-# No managed Postgres (Render deletes free databases after 30 days): the app uses its embedded PGlite,
-# created and seeded during the build (creating it at boot needs more than the free 512 MB). Each wake
-# starts again from that copy, re-seeded for today if it's stale. Set DATABASE_URL to use Postgres instead.
-# Secrets (PayPal, Gemini, Groq, Channel3, AG Studio) are prompted for at deploy time (sync: false).
+# Database: a free Postgres from Neon (neon.com), pasted as DATABASE_URL. Render deletes its own free
+# databases after 30 days, and the embedded PGlite used locally needs more than the free 512 MB on Linux.
+# The build migrates and seeds the database (db:prepare); a stale, unstarted week is re-seeded on boot.
+# Secrets (database, PayPal, Gemini, Groq, Channel3, AG Studio) are prompted for at deploy time (sync: false).
 services:
   - type: web
     name: collective
@@ -17,6 +17,8 @@ services:
         value: "22"
       - key: DEMO_MODE
         value: "true"
+      - key: DATABASE_URL
+        sync: false
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET

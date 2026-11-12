@@ -15,7 +15,7 @@ Deadline: **Fri 13 Nov 2026, 01:30 IST** (Thu 12 Nov, 12:00 PT). Aim to submit b
 
 ## Must do (the submission is incomplete without these)
 
-- [ ] **Deploy on Render (free plan, no card needed).** Use the Deploy to Render button in the README, or New > Blueprint with this repo. Render needs access to the repo: while it is private, connect the GitHub account that owns it (Anshum's), or make it public first. When Render prompts for secrets, enter the same values as your local `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PERSONAL_EMAIL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `CHANNEL3_API_KEY`. Leave the others blank for now.
+- [ ] **Deploy on Render (free plan, no card needed).** Use the Deploy to Render button in the README, or New > Blueprint with this repo. Render needs access to the repo: while it is private, connect the GitHub account that owns it (Anshum's), or make it public first. Create a free Postgres on neon.com (no card) and paste its connection string as `DATABASE_URL`. When Render prompts for secrets, enter the same values as your local `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_PERSONAL_EMAIL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `CHANNEL3_API_KEY`. Leave the others blank for now.
 - [ ] **Check the deploy.** `https://<service>.onrender.com/api/health` should return `{"ok":true,"paypal":"sandbox"}`. Then complete the guided tour once from a private window. Every visitor shares one demo week, so if two people tour at once they can move each other's steps. The testing notes tell judges to press Start over if that happens.
 - [ ] **Add the PayPal webhook.** In developer.paypal.com, open Apps & Credentials, then the **Collective US** app, then Add Webhook. Use the URL `https://<service>.onrender.com/api/webhooks/paypal` and select all payment events. Copy the Webhook ID into Render as `PAYPAL_WEBHOOK_ID` and redeploy.
 - [ ] **Make the repo public.** Anshum does this: GitHub, Settings, Danger zone, Change visibility.
@@ -31,5 +31,5 @@ Deadline: **Fri 13 Nov 2026, 01:30 IST** (Thu 12 Nov, 12:00 PT). Aim to submit b
 ## Housekeeping
 
 - [ ] **Rotate the secrets** that were pasted in chat on 10 Nov from the PaperMind `.env` (the Supabase keys and the JWT secret). This is a different project, but the values are no longer private.
-- [ ] **Keep the Render service running until 15 Dec**, when judging ends. It is on the free plan: it sleeps after 15 minutes without visitors and wakes in about a minute, starting a fresh demo week.
+- [ ] **Keep the Render service running until 15 Dec**, when judging ends. It is on the free plan: it sleeps after 15 minutes without visitors and wakes in about a minute. The Neon database sleeps too and keeps its data.
 - [ ] **Optional:** an AG Studio licence as `AG_STUDIO_LICENSE`. Without it, the analytics page shows a trial watermark.

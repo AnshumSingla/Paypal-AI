@@ -54,7 +54,7 @@ Collective does the volunteer's job with an AI agent and moves the money risk to
 - **AI:** one tool-using agent (the Society Secretary) with eight tools, plus agents for reading lists and photos, explaining bids, suggesting supplier price ladders, assessing complaints, and an AI analyst in AG Studio. Gemini runs first and Groq takes over if Gemini is rate-limited or down. Every reply is validated JSON and every decision is logged with the model that made it.
 - **Safety by construction:** no agent can capture, void or pay out; only the engine does. The Secretary's refund tool is checked in code ($10 maximum, never above what was charged, a limited number per flat). A supplier's new price can only be lower, never below its floor, and never changes the first price the holds were sized on, so every capture fits inside its hold.
 - **Trust:** supplier scores come from verified deliveries and upheld complaints, smoothed for small samples and weighted to recent weeks. Bids are scored price 40, trust 45, reachable minimum 15.
-- **Stack:** Next.js 16, React 19, TypeScript, Drizzle on Postgres (PGlite locally and on the free hosted demo), deployed on Render.
+- **Stack:** Next.js 16, React 19, TypeScript, Drizzle on Postgres (PGlite locally, Neon for the hosted demo), deployed on Render.
 - **Reliability:** 57 automated tests, including a full week, a second week after reset, a failed void not blocking cutoff, idempotent re-runs, restart recovery and the guided tour end to end. The whole week also runs on the real PayPal sandbox (`npm run sandbox:week`). With no keys at all it runs on a PayPal stand-in and rule-based AI, so anyone can try it.
 
 ### Design
@@ -99,7 +99,7 @@ Open http://localhost:3000 and press **Take the guided tour**. Without keys, Pay
 3. At the edge cases, choose what happens: a neighbour's card is declined, or Ananya withdraws and her hold is voided; a missing pack the Secretary refunds itself, or a bigger claim the captain approves or rejects.
 4. Off the tour, approve a hold yourself on the resident's page with the PayPal button (sandbox personal account **[ ]**) or **Hold with a PayPal sandbox test card**, which needs no login.
 5. **Start over** on the home page (or Reset under Manual controls) returns to Week 46 at any time.
-6. The hosted demo runs on a free server that sleeps when nobody is using it, so the first page can take about a minute to load. It wakes with a fresh week.
+6. The hosted demo runs on a free server that sleeps when nobody is using it, so the first page can take about a minute to load.
 7. The hosted demo is one shared building, so another judge touring at the same moment can move the week on. If a step jumps or doesn't match what you just did, press **Start over**; a full tour takes about three minutes.
 
 ---
