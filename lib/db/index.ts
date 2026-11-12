@@ -29,12 +29,18 @@ async function connect(): Promise<DB> {
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
   const dataDir = process.env.PGLITE_DIR === "memory" ? undefined : (process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite"));
-  if (dataDir) (await import("node:fs")).mkdirSync(path.dirname(dataDir), { recursive: true });
+  const fs = await import("node:fs");
+  mem(`opening PGlite at ${dataDir ?? "memory"} (exists: ${!!dataDir && fs.existsSync(path.join(dataDir, "PG_VERSION"))})`);
+  if (dataDir) fs.mkdirSync(path.dirname(dataDir), { recursive: true });
   const client = new PGlite(dataDir);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS });
+  mem("migrated");
   return db as unknown as DB;
 }
+
+// Startup memory in the server log: the free Render instance has 512 MB.
+const mem = (stage: string) => console.log(`[db] ${stage}, rss ${Math.round(process.memoryUsage().rss / 1048576)} MB`);
 
 /** Shared connection; migrates on first use and seeds the demo society if the DB is empty. */
 export function getDb(): Promise<DB> {
@@ -45,6 +51,7 @@ export function getDb(): Promise<DB> {
       const { refreshStaleDemo } = await import("../engine/demo");
       await refreshStaleDemo(db);
       await restoreMockPayPal(db);
+      mem("ready");
       return db;
     })
     .catch((e) => {
